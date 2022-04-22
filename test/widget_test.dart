@@ -1,30 +1,55 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+import 'package:test/test.dart';
 
-import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
-
-import 'package:roguelike/main.dart';
+import 'package:roguelike/model.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  test('hasPathBetween smoke test', () {
+    final passable = Level(const [
+      [Cell.empty(), Cell.empty(), Cell.empty()]
+    ]);
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(passable.hasPathBetween(const Position(0, 0), const Position(0, 0)),
+        isTrue);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    expect(passable.hasPathBetween(const Position(0, 0), const Position(2, 0)),
+        isTrue);
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    final impassible = Level(const [
+      [Cell.empty(), Cell.wall(), Cell.empty()]
+    ]);
+    expect(
+        impassible.hasPathBetween(const Position(0, 0), const Position(2, 0)),
+        isFalse);
+
+    final ontoWall = Level(const [
+      [Cell.empty(), Cell.empty(), Cell.wall()]
+    ]);
+    expect(ontoWall.hasPathBetween(const Position(0, 0), const Position(2, 0)),
+        isFalse);
+  });
+
+  test('cellAt outOfBounds', () {
+    final level = Level(const [
+      [Cell.empty(), Cell.wall()]
+    ]);
+    expect(level.getCell(const Position(0, 0)).type, equals(CellType.empty));
+    expect(level.getCell(const Position(1, 0)).type, equals(CellType.wall));
+    expect(
+        level.getCell(const Position(0, 1)).type, equals(CellType.outOfBounds));
+    expect(level.getCell(const Position(-1, 0)).type,
+        equals(CellType.outOfBounds));
+    expect(level.getCell(const Position(0, -1)).type,
+        equals(CellType.outOfBounds));
+  });
+
+  test('MazeLevelGenerator', () {
+    final generator = MazeLevelGenerator(
+      size: const ISize(10, 10),
+      start: const Position(0, 0),
+      end: const Position(9, 9),
+      seed: 0,
+    );
+    generator.addManyWalls(80);
+    expect(generator.level.toString(), '???');
   });
 }
