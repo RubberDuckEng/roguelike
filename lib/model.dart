@@ -11,6 +11,8 @@ class Delta {
       : dx = 0,
         dy = 0;
 
+  bool get isZero => this == const Delta.zero();
+
   const Delta.up()
       : dx = 0,
         dy = -1;
@@ -50,6 +52,7 @@ class Position {
 
   const Position(this.x, this.y);
 
+  // FIXME: Why isn't this operator+?
   Position apply(Delta delta) => Position(x + delta.dx, y + delta.dy);
 
   Delta deltaTo(Position other) {
@@ -132,6 +135,9 @@ class Level {
             (index) =>
                 List.generate(size.width, (index) => const Cell.empty()));
 
+  int get width => _cells.first.length;
+  int get height => _cells.length;
+
   // Should this be on an LevelBuilder instead?
   void setCell(Position position, Cell cell) {
     if (position.y < 0 || position.y >= _cells.length) {
@@ -211,24 +217,48 @@ class MazeLevelGenerator {
     required this.size,
     required this.start,
     required this.end,
-    int? seed,
+    Random? random,
   })  : level = Level.empty(size),
-        _random = Random(seed);
+        _random = random ?? Random();
 
-  Position getRandomPosition() {
+  static Iterable<Level> generateLevels(ISize size, int count,
+      {int? seed}) sync* {
+    var random = Random(seed);
+    while (count > 0) {
+      var start = getRandomPosition(size, random);
+      var end = getRandomPositionWithCondition(
+          size, random, (position) => position != start);
+      var generator = MazeLevelGenerator(
+          size: size, start: start, end: end, random: random);
+      generator.addManyWalls(20);
+      yield generator.level;
+      count -= 1;
+    }
+  }
+
+  static Position getRandomPosition(ISize size, Random random) {
     var area = size.width * size.height;
-    var offset = _random.nextInt(area);
+    var offset = random.nextInt(area);
     var width = (offset / size.width).truncate();
     var height = offset % size.height;
     return Position(width, height);
   }
 
+  static Position getRandomPositionWithCondition(
+      ISize size, Random random, bool Function(Position position) allowed) {
+    // FIXME: Track seen positions and avoid repeats / terminate if tried all?
+    while (true) {
+      final position = getRandomPosition(size, random);
+      if (allowed(position)) {
+        return position;
+      }
+    }
+  }
+
   void addWall() {
     while (true) {
-      final position = getRandomPosition();
-      if (!level.getCell(position).isPassable) {
-        continue;
-      }
+      final position = getRandomPositionWithCondition(
+          size, _random, (position) => level.getCell(position).isPassable);
       final oldCell = level.getCell(position);
       level.setCell(position, const Cell.wall());
       if (level.hasPathBetween(start, end)) {
@@ -247,13 +277,13 @@ class MazeLevelGenerator {
 
 class World {
   final ISize size;
-  final Level level;
+  final List<Level> levels;
 
   // Avoids refactoring for ISize, could be removed.
   int get width => size.width;
   int get height => size.height;
 
-  World(this.size) : level = Level.empty(size);
+  World(this.size, this.levels);
 }
 
 class Player {
@@ -311,14 +341,29 @@ class GameState {
   World world;
   Player player;
   List<Mob> mobs;
+  int currentLevelIndex; // Currently unused.
 
-  GameState.demo()
-      : world = World(const ISize(10, 10)),
+  Level get currentLevel => world.levels[currentLevelIndex];
+
+  GameState.demo([ISize size = const ISize(10, 10)])
+      : world = World(
+            size, MazeLevelGenerator.generateLevels(size, 1, seed: 0).toList()),
+        currentLevelIndex = 0,
         player = Player.spawn(const Position(3, 4)),
         mobs = [] {
     final mob = Mob.spawn(const Position(2, 1));
     mob.brain = RandomMover(mob);
     mobs.add(mob);
+  }
+
+  // FIXME: Not clear this belongs here?
+  bool canMove(Player player, Delta delta) {
+    if (delta.isZero) {
+      return false;
+    }
+    var targetPosition = player.location.apply(delta);
+    var targetCell = currentLevel.getCell(targetPosition);
+    return targetCell.isPassable;
   }
 
   void nextTurn() {

@@ -8,13 +8,18 @@ class WorldPainter extends CustomPainter {
 
   WorldPainter(this.gameState);
 
-  void paintBackground(Canvas canvas, Size size, Size cell) {
+  void paintBackground(Canvas canvas, Size size, Size cellSize) {
     final paint = Paint();
     paint.style = PaintingStyle.fill;
     for (int i = 0; i < gameState.world.width; ++i) {
       for (int j = 0; j < gameState.world.height; ++j) {
-        paint.color = ((i + j) % 2 == 0) ? Colors.black12 : Colors.black26;
-        canvas.drawRect(rectForPosition(Position(i, j), cell), paint);
+        var cell = gameState.currentLevel.getCell(Position(i, j));
+        if (cell.isPassable) {
+          paint.color = ((i + j) % 2 == 0) ? Colors.black12 : Colors.black26;
+        } else {
+          paint.color = Colors.blue.shade300;
+        }
+        canvas.drawRect(rectForPosition(Position(i, j), cellSize), paint);
       }
     }
   }
@@ -132,7 +137,7 @@ class _MyHomePageState extends State<MyHomePage> {
               onKey: (event) {
                 if (event is RawKeyDownEvent) {
                   var move = moveFromKeyEvent(event);
-                  if (move != const Delta.zero()) {
+                  if (gameState.canMove(gameState.player, move)) {
                     setState(() {
                       gameState.player.move(move);
                       gameState.nextTurn();

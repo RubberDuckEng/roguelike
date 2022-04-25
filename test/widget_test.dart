@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:test/test.dart';
 
 import 'package:roguelike/model.dart';
@@ -42,14 +43,30 @@ void main() {
         equals(CellType.outOfBounds));
   });
 
-  test('MazeLevelGenerator', () {
+  test('MazeLevelGenerator smoketest', () {
     final generator = MazeLevelGenerator(
       size: const ISize(10, 10),
       start: const Position(0, 0),
       end: const Position(9, 9),
-      seed: 0,
+      random: Random(0),
     );
-    generator.addManyWalls(80);
-    expect(generator.level.toString(), '???');
+    generator.addManyWalls(10);
+    var level = generator.level;
+
+    // FIXME: Where does this belong?
+    int passableCellCount(Level level) {
+      int passableCount = 0;
+      for (int x = 0; x < level.width; x++) {
+        for (int y = 0; y < level.height; y++) {
+          var cell = level.getCell(Position(x, y));
+          if (cell.isPassable) {
+            passableCount += 1;
+          }
+        }
+      }
+      return passableCount;
+    }
+
+    expect(passableCellCount(level), 90);
   });
 }
