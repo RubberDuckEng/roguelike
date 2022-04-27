@@ -297,7 +297,7 @@ class Player {
 }
 
 abstract class Brain {
-  void update();
+  void update(GameState state);
 }
 
 class RandomMover extends Brain {
@@ -313,10 +313,22 @@ class RandomMover extends Brain {
 
   RandomMover(this.mob, {int? seed}) : _random = Random(seed);
 
+  Iterable<Position> legalMoves(GameState state) sync* {
+    for (var delta in possibleMoves) {
+      var position = mob.location.apply(delta);
+      if (state.currentLevel.isPassable(position)) {
+        yield position;
+      }
+    }
+  }
+
   @override
-  void update() {
-    final index = _random.nextInt(possibleMoves.length);
-    mob.move(possibleMoves[index]);
+  void update(GameState state) {
+    var positions = legalMoves(state).toList();
+    if (positions.isNotEmpty) {
+      final index = _random.nextInt(positions.length);
+      mob.location = positions[index];
+    }
   }
 }
 
@@ -326,13 +338,9 @@ class Mob {
 
   Mob.spawn(this.location);
 
-  void move(Delta delta) {
-    location = location.apply(delta);
-  }
-
-  void update() {
+  void update(GameState state) {
     if (brain != null) {
-      brain!.update();
+      brain!.update(state);
     }
   }
 }
@@ -369,7 +377,7 @@ class GameState {
   void nextTurn() {
     List<Mob> doomed = [];
     for (var mob in mobs) {
-      mob.update();
+      mob.update(this);
       if (mob.location == player.location) {
         doomed.add(mob);
       }
