@@ -103,6 +103,11 @@ enum CellType {
   outOfBounds,
 }
 
+enum NamedLocation {
+  entrance,
+  exit,
+}
+
 class Cell {
   final CellType type;
 
@@ -126,10 +131,12 @@ class Cell {
 
 class Level {
   final List<List<Cell>> _cells;
+  final Position enter;
+  final Position exit;
 
-  Level(this._cells);
+  Level(this._cells, {required this.enter, required this.exit});
 
-  Level.empty(ISize size)
+  Level.empty(ISize size, {required this.enter, required this.exit})
       : _cells = List.generate(
             size.height,
             (index) =>
@@ -174,6 +181,9 @@ class Level {
   }
 
   bool hasPathBetween(Position start, Position end) {
+    if (!isPassable(start)) {
+      return false;
+    }
     final visited = {};
     final queue = [];
     queue.add(start);
@@ -193,6 +203,15 @@ class Level {
     return false;
   }
 
+  Position positionForNamedLocation(NamedLocation location) {
+    switch (location) {
+      case NamedLocation.entrance:
+        return enter;
+      case NamedLocation.exit:
+        return exit;
+    }
+  }
+
   @override
   String toString() {
     final buffer = StringBuffer();
@@ -204,6 +223,25 @@ class Level {
     }
     return buffer.toString();
   }
+}
+
+Position _getRandomPositionWithCondition(
+    ISize size, Random random, bool Function(Position position) allowed) {
+  // FIXME: Track seen positions and avoid repeats / terminate if tried all?
+  while (true) {
+    final position = _getRandomPosition(size, random);
+    if (allowed(position)) {
+      return position;
+    }
+  }
+}
+
+Position _getRandomPosition(ISize size, Random random) {
+  var area = size.width * size.height;
+  var offset = random.nextInt(area);
+  var width = (offset / size.width).truncate();
+  var height = offset % size.height;
+  return Position(width, height);
 }
 
 class MazeLevelGenerator {
@@ -218,15 +256,14 @@ class MazeLevelGenerator {
     required this.start,
     required this.end,
     Random? random,
-  })  : level = Level.empty(size),
+  })  : level = Level.empty(size, enter: start, exit: end),
         _random = random ?? Random();
 
-  static Iterable<Level> generateLevels(ISize size, int count,
-      {int? seed}) sync* {
-    var random = Random(seed);
+  static Iterable<Level> generateLevels(
+      ISize size, int count, Random random) sync* {
     while (count > 0) {
-      var start = getRandomPosition(size, random);
-      var end = getRandomPositionWithCondition(
+      var start = _getRandomPosition(size, random);
+      var end = _getRandomPositionWithCondition(
           size, random, (position) => position != start);
       var generator = MazeLevelGenerator(
           size: size, start: start, end: end, random: random);
@@ -236,28 +273,9 @@ class MazeLevelGenerator {
     }
   }
 
-  static Position getRandomPosition(ISize size, Random random) {
-    var area = size.width * size.height;
-    var offset = random.nextInt(area);
-    var width = (offset / size.width).truncate();
-    var height = offset % size.height;
-    return Position(width, height);
-  }
-
-  static Position getRandomPositionWithCondition(
-      ISize size, Random random, bool Function(Position position) allowed) {
-    // FIXME: Track seen positions and avoid repeats / terminate if tried all?
-    while (true) {
-      final position = getRandomPosition(size, random);
-      if (allowed(position)) {
-        return position;
-      }
-    }
-  }
-
   void addWall() {
     while (true) {
-      final position = getRandomPositionWithCondition(
+      final position = _getRandomPositionWithCondition(
           size, _random, (position) => level.getCell(position).isPassable);
       final oldCell = level.getCell(position);
       level.setCell(position, const Cell.wall());
@@ -345,23 +363,129 @@ class Mob {
   }
 }
 
+abstract class PlayerAction {
+  // TODO: Refactor actions to work with generic mobs and make player into mob.
+  final Player player;
+
+  PlayerAction({required this.player});
+
+  void execute(GameState state);
+}
+
+class PlayerMoveAction extends PlayerAction {
+  final Position destination;
+
+  PlayerMoveAction({
+    required this.destination,
+    required super.player,
+  });
+
+  @override
+  void execute(GameState state) {
+    // TODO: Multiplayer?
+    assert(state.player == player);
+    state.player.location = destination;
+  }
+}
+
+class PlayerAttackAction extends PlayerAction {
+  final Position target;
+
+  PlayerAttackAction({
+    required this.target,
+    required super.player,
+  });
+
+  @override
+  void execute(GameState state) {
+    List<Mob> doomed = [];
+    for (var mob in state.mobs) {
+      if (mob.location == target) {
+        doomed.add(mob);
+      }
+    }
+    for (var mob in doomed) {
+      state.mobs.remove(mob);
+    }
+  }
+}
+
 class GameState {
-  World world;
-  Player player;
+  late World world;
+  late Player player;
   List<Mob> mobs;
   int currentLevelIndex; // Currently unused.
+  final Random random;
 
   Level get currentLevel => world.levels[currentLevelIndex];
 
-  GameState.demo([ISize size = const ISize(10, 10)])
-      : world = World(
-            size, MazeLevelGenerator.generateLevels(size, 1, seed: 0).toList()),
+  GameState.demo({
+    ISize size = const ISize(10, 10),
+    int? seed,
+  })  : random = Random(seed),
         currentLevelIndex = 0,
-        player = Player.spawn(const Position(3, 4)),
         mobs = [] {
-    final mob = Mob.spawn(const Position(2, 1));
-    mob.brain = RandomMover(mob);
-    mobs.add(mob);
+    world = World(
+        size, MazeLevelGenerator.generateLevels(size, 2, random).toList());
+    player = Player.spawn(const Position(0, 0));
+    spawnInLevel(0, NamedLocation.entrance);
+  }
+
+  void spawnInLevel(int index, NamedLocation location) {
+    int missing = index - world.levels.length + 1;
+    if (missing > 0) {
+      world.levels.addAll(
+          MazeLevelGenerator.generateLevels(world.size, missing, random));
+    }
+    currentLevelIndex = index;
+    player.location = currentLevel.positionForNamedLocation(location);
+    // TODO: Mobs state should be split out into a LevelState.
+    mobs.clear();
+    for (int i = 0; i < index; ++i) {
+      final mob = Mob.spawn(getMobSpawnLocation(random));
+      mob.brain = RandomMover(mob);
+      mobs.add(mob);
+    }
+  }
+
+  Position getMobSpawnLocation(Random random) {
+    return _getRandomPositionWithCondition(world.size, random,
+        (Position position) {
+      if (!currentLevel.isPassable(position)) {
+        return false;
+      }
+      if (player.location == position) {
+        return false;
+      }
+      for (var mob in mobs) {
+        if (mob.location == position) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }
+
+  PlayerAction? actionFor(Player player, Delta delta) {
+    final target = player.location.apply(delta);
+    var mob = mobAt(target);
+    if (mob != null) {
+      return PlayerAttackAction(target: target, player: player);
+    }
+    if (canMove(player, delta)) {
+      return PlayerMoveAction(
+          destination: player.location.apply(delta), player: player);
+    }
+    return null;
+  }
+
+  Mob? mobAt(Position position) {
+    for (var mob in mobs) {
+      if (mob.location == position) {
+        return mob;
+      }
+    }
+    return null;
   }
 
   // FIXME: Not clear this belongs here?
@@ -375,15 +499,13 @@ class GameState {
   }
 
   void nextTurn() {
-    List<Mob> doomed = [];
     for (var mob in mobs) {
       mob.update(this);
-      if (mob.location == player.location) {
-        doomed.add(mob);
-      }
     }
-    for (var mob in doomed) {
-      mobs.remove(mob);
+    if (player.location == currentLevel.exit) {
+      spawnInLevel(currentLevelIndex + 1, NamedLocation.entrance);
+    } else if (player.location == currentLevel.enter && currentLevelIndex > 1) {
+      spawnInLevel(currentLevelIndex - 1, NamedLocation.exit);
     }
   }
 }

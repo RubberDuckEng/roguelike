@@ -24,13 +24,22 @@ class WorldPainter extends CustomPainter {
     }
   }
 
+  void paintPortal(
+      Canvas canvas, Position position, Color color, Size cellSize) {
+    final paint = Paint();
+    paint.color = color;
+    var rect = rectForPosition(position, cellSize);
+    canvas.drawCircle(rect.center, rect.width / 2.0, paint);
+  }
+
   Rect rectForPosition(Position position, Size cell) {
     return Rect.fromLTWH(position.x * cell.width, position.y * cell.height,
         cell.width, cell.height);
   }
 
-  Offset offsetForPosition(Position position, Size cell) {
-    return Offset(position.x * cell.width, position.y * cell.height);
+  Offset offsetForPosition(Position position, Size cellSize) {
+    return Offset((position.x + 0.5) * cellSize.width,
+        (position.y + 0.5) * cellSize.height);
   }
 
   void paintPlayer(Canvas canvas, Size cellSize) {
@@ -51,6 +60,10 @@ class WorldPainter extends CustomPainter {
     final cellSize = Size(size.width / gameState.world.width,
         size.height / gameState.world.height);
     paintBackground(canvas, size, cellSize);
+    paintPortal(
+        canvas, gameState.currentLevel.enter, Colors.green.shade500, cellSize);
+    paintPortal(
+        canvas, gameState.currentLevel.exit, Colors.purple.shade500, cellSize);
     paintPlayer(canvas, cellSize);
     for (var mob in gameState.mobs) {
       paintMob(canvas, cellSize, mob);
@@ -104,7 +117,7 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-Delta moveFromKeyEvent(RawKeyDownEvent event) {
+Delta deltaFromKey(RawKeyDownEvent event) {
   if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
     return const Delta.left();
   } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
@@ -127,30 +140,35 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Row(
-        children: [
-          AspectRatio(
-            aspectRatio: 1.0,
-            child: RawKeyboardListener(
-              autofocus: true,
-              focusNode: focusNode,
-              onKey: (event) {
-                if (event is RawKeyDownEvent) {
-                  var move = moveFromKeyEvent(event);
-                  if (gameState.canMove(gameState.player, move)) {
-                    setState(() {
-                      gameState.player.move(move);
-                      gameState.nextTurn();
-                    });
+      body: Center(
+        child: Column(children: [
+          Text("Level: ${gameState.currentLevelIndex}"),
+          Expanded(
+            child: AspectRatio(
+              aspectRatio: 1.0,
+              child: RawKeyboardListener(
+                autofocus: true,
+                focusNode: focusNode,
+                onKey: (event) {
+                  if (event is RawKeyDownEvent) {
+                    var delta = deltaFromKey(event);
+                    var playerAction =
+                        gameState.actionFor(gameState.player, delta);
+                    if (playerAction != null) {
+                      setState(() {
+                        playerAction.execute(gameState);
+                        gameState.nextTurn();
+                      });
+                    }
                   }
-                }
-              },
-              child: WorldView(
-                gameState: gameState,
+                },
+                child: WorldView(
+                  gameState: gameState,
+                ),
               ),
             ),
           ),
-        ],
+        ]),
       ),
     );
   }

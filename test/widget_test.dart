@@ -7,7 +7,7 @@ void main() {
   test('hasPathBetween smoke test', () {
     final passable = Level(const [
       [Cell.empty(), Cell.empty(), Cell.empty()]
-    ]);
+    ], enter: const Position(0, 0), exit: const Position(0, 2));
 
     expect(passable.hasPathBetween(const Position(0, 0), const Position(0, 0)),
         isTrue);
@@ -15,24 +15,46 @@ void main() {
     expect(passable.hasPathBetween(const Position(0, 0), const Position(2, 0)),
         isTrue);
 
-    final impassible = Level(const [
-      [Cell.empty(), Cell.wall(), Cell.empty()]
-    ]);
+    final impassible = Level(
+      const [
+        [Cell.empty(), Cell.wall(), Cell.empty()]
+      ],
+      enter: const Position(0, 0),
+      exit: const Position(0, 2),
+    );
     expect(
         impassible.hasPathBetween(const Position(0, 0), const Position(2, 0)),
         isFalse);
 
-    final ontoWall = Level(const [
-      [Cell.empty(), Cell.empty(), Cell.wall()]
-    ]);
+    final ontoWall = Level(
+      const [
+        [Cell.empty(), Cell.empty(), Cell.wall()]
+      ],
+      enter: const Position(0, 0),
+      exit: const Position(0, 2),
+    );
     expect(ontoWall.hasPathBetween(const Position(0, 0), const Position(2, 0)),
+        isFalse);
+
+    final fromWall = Level(
+      const [
+        [Cell.wall(), Cell.empty(), Cell.empty()]
+      ],
+      enter: const Position(0, 0),
+      exit: const Position(2, 0),
+    );
+    expect(fromWall.hasPathBetween(const Position(0, 0), const Position(2, 0)),
         isFalse);
   });
 
   test('cellAt outOfBounds', () {
-    final level = Level(const [
-      [Cell.empty(), Cell.wall()]
-    ]);
+    final level = Level(
+      const [
+        [Cell.empty(), Cell.wall()]
+      ],
+      enter: const Position(0, 0),
+      exit: const Position(0, 1),
+    );
     expect(level.getCell(const Position(0, 0)).type, equals(CellType.empty));
     expect(level.getCell(const Position(1, 0)).type, equals(CellType.wall));
     expect(
