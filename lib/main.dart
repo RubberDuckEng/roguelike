@@ -65,7 +65,7 @@ class WorldPainter extends CustomPainter {
       for (int j = 0; j < gameState.world.height; ++j) {
         var item = gameState.currentLevelState.itemAt(Position(i, j));
         if (item != null) {
-          paint.color = Colors.blue.shade300;
+          paint.color = Colors.pink.shade300;
           canvas.drawRect(rectForPosition(Position(i, j), cellSize), paint);
         }
       }
@@ -97,6 +97,7 @@ class WorldPainter extends CustomPainter {
         canvas, gameState.currentLevel.enter, Colors.green.shade500, cellSize);
     paintPortal(
         canvas, gameState.currentLevel.exit, Colors.purple.shade500, cellSize);
+    paintItems(canvas, cellSize);
     for (var mob in gameState.currentLevelState.mobs) {
       paintMob(canvas, cellSize, mob);
     }

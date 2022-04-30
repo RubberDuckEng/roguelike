@@ -485,10 +485,22 @@ class LevelState {
 
   void spawnKey(Random random) {
     var keyLocation = getItemSpawnLocation(random);
-    itemGrid.set(keyLocation, Item.key);
+    setItemAt(keyLocation, Item.key);
   }
 
   bool isRevealed(Position position) => revealed.get(position) ?? false;
+
+  Item? pickupItem(Position position) {
+    var item = itemGrid.get(position);
+    if (item != null) {
+      itemGrid.set(position, null);
+    }
+    return item;
+  }
+
+  void setItemAt(Position position, Item item) {
+    itemGrid.set(position, item);
+  }
 
   Item? itemAt(Position position) => itemGrid.get(position);
 
@@ -606,6 +618,7 @@ class GameState {
     }
     var targetPosition = player.location.apply(delta);
     var targetCell = currentLevel.getCell(targetPosition);
+    // FIXME: Exit isn't passable w/o a key?
     return targetCell.isPassable;
   }
 
@@ -620,7 +633,10 @@ class GameState {
     for (var mob in currentLevelState.mobs) {
       mob.update(this);
     }
-    if (player.location == currentLevel.exit) {
+    var item = currentLevelState.pickupItem(player.location);
+    if (item != null) {
+      player.inventory.add(item);
+    } else if (player.location == currentLevel.exit) {
       spawnInLevel(_currentLevelIndex + 1, NamedLocation.entrance);
     } else if (player.location == currentLevel.enter &&
         _currentLevelIndex > 1) {
