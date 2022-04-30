@@ -319,7 +319,8 @@ class Player extends Mob {
 
   int get missingHealth => maxHealth - currentHealth;
 
-  Sprite get sprite => Sprites.flutter_dash;
+  @override
+  Sprite get sprite => Sprites.flutterDash;
 
   void move(Delta delta) {
     location += delta;
@@ -342,7 +343,8 @@ class Player extends Mob {
 class Enemy extends Mob {
   Brain? brain;
 
-  Sprite get sprite => Sprites.alien_monster;
+  @override
+  Sprite get sprite => Sprites.alienMonster;
 
   Enemy.spawn(Position location) : super.spawn(location);
 
