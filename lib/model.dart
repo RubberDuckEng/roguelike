@@ -594,7 +594,7 @@ class GameState {
     if (delta.isZero) {
       return false;
     }
-    var targetPosition = player.location.apply(delta);
+    var targetPosition = player.location + delta;
     var targetCell = currentLevel.getCell(targetPosition);
     // FIXME: Exit isn't passable w/o a key?
     return targetCell.isPassable;
