@@ -28,8 +28,7 @@ class WorldPainter extends CustomPainter {
       Canvas canvas, Position position, Color color, Size cellSize) {
     final paint = Paint();
     paint.color = color;
-    var rect = rectForPosition(position, cellSize);
-    canvas.drawCircle(rect.center, rect.width / 2.0, paint);
+    canvas.drawRect(rectForPosition(position, cellSize), paint);
   }
 
   Rect rectForPosition(Position position, Size cell) {
@@ -45,14 +44,15 @@ class WorldPainter extends CustomPainter {
   void paintPlayer(Canvas canvas, Size cellSize) {
     var paint = Paint();
     paint.color = Colors.orange.shade500;
-    canvas.drawRect(
-        rectForPosition(gameState.player.location, cellSize), paint);
+    var rect = rectForPosition(gameState.player.location, cellSize);
+    canvas.drawCircle(rect.center, rect.width / 2.0, paint);
   }
 
   void paintMob(Canvas canvas, Size cellSize, Mob mob) {
     var paint = Paint();
     paint.color = Colors.red.shade500;
-    canvas.drawRect(rectForPosition(mob.location, cellSize), paint);
+    var rect = rectForPosition(mob.location, cellSize);
+    canvas.drawCircle(rect.center, rect.width / 2.0, paint);
   }
 
   @override
