@@ -112,10 +112,55 @@ class WorldPainter extends CustomPainter {
   }
 }
 
+class HealthPip extends StatelessWidget {
+  const HealthPip({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Icon(
+      Icons.favorite,
+      color: Colors.pink,
+    );
+  }
+}
+
+class HealthIndicator extends StatelessWidget {
+  final GameState gameState;
+
+  const HealthIndicator({
+    super.key,
+    required this.gameState,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (int i = 0; i < gameState.player.health; ++i) const HealthPip(),
+      ],
+    );
+  }
+}
+
 class LevelIndicator extends StatelessWidget {
   final GameState gameState;
 
   const LevelIndicator({
+    super.key,
+    required this.gameState,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Text("Level: ${gameState.currentLevelNumber}");
+  }
+}
+
+class HeadsUpDisplay extends StatelessWidget {
+  final GameState gameState;
+
+  const HeadsUpDisplay({
     super.key,
     required this.gameState,
   });
@@ -129,7 +174,14 @@ class LevelIndicator extends StatelessWidget {
       ),
       padding: const EdgeInsets.all(8.0),
       margin: const EdgeInsets.all(8.0),
-      child: Text("Level: ${gameState.currentLevelNumber}"),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          HealthIndicator(gameState: gameState),
+          const SizedBox.square(dimension: 8.0),
+          LevelIndicator(gameState: gameState),
+        ],
+      ),
     );
   }
 }
@@ -149,7 +201,7 @@ class WorldView extends StatelessWidget {
         ),
         Align(
           alignment: Alignment.bottomRight,
-          child: LevelIndicator(gameState: gameState),
+          child: HeadsUpDisplay(gameState: gameState),
         )
       ],
     );
