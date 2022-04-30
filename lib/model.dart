@@ -383,9 +383,16 @@ class RandomMover extends Brain {
   Iterable<Position> legalMoves(GameState state) sync* {
     for (var delta in possibleMoves) {
       var position = mob.location.apply(delta);
-      if (state.currentLevel.isPassable(position)) {
-        yield position;
+      if (!state.currentLevel.isPassable(position)) {
+        continue;
       }
+      if (state.player.location == position) {
+        continue;
+      }
+      if (state.currentLevelState.mobAt(position) != null) {
+        continue;
+      }
+      yield position;
     }
   }
 
