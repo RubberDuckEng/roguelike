@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:test/test.dart';
 
 import 'package:roguelike/model.dart';
+import 'package:roguelike/geometry.dart';
 
 void main() {
   test('hasPathBetween smoke test', () {
