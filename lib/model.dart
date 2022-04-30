@@ -469,7 +469,11 @@ class LevelState {
   LevelState.spawn(this.level, this.levelIndex, Random random)
       : mobs = [],
         revealed = Grid<bool>.filled(level.size, () => false) {
-    for (int i = 0; i < levelIndex; ++i) {
+    spawnMobs(levelIndex, random);
+  }
+
+  void spawnMobs(int count, Random random) {
+    for (int i = 0; i < count; ++i) {
       final mob = Mob.spawn(getMobSpawnLocation(random));
       mob.brain = RandomMover(mob);
       mobs.add(mob);
