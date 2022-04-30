@@ -100,8 +100,11 @@ class WorldPainter extends CustomPainter {
     paintBackground(canvas, cellSize);
     paintPortal(
         canvas, gameState.currentLevel.enter, Colors.green.shade500, cellSize);
-    paintPortal(
-        canvas, gameState.currentLevel.exit, Colors.purple.shade500, cellSize);
+    var exitColor = Colors.purple.shade500;
+    if (!gameState.currentLevelState.exitUnlocked) {
+      exitColor = Colors.black38;
+    }
+    paintPortal(canvas, gameState.currentLevel.exit, exitColor, cellSize);
     paintItems(canvas, cellSize);
     for (var mob in gameState.currentLevelState.enemies) {
       paintMob(canvas, cellSize, mob);
