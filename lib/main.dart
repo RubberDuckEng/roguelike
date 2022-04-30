@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'model.dart';
 import 'geometry.dart';
+import 'sprite.dart';
 
 class WorldPainter extends CustomPainter {
   final GameState gameState;
@@ -66,16 +67,16 @@ class WorldPainter extends CustomPainter {
       for (int j = 0; j < gameState.world.height; ++j) {
         var item = gameState.currentLevelState.itemAt(Position(i, j));
         if (item != null) {
+          final rect = rectForPosition(Position(i, j), cellSize);
           if (item is PortalKey) {
-            paint.color = Colors.pink.shade300;
+            Sprites.key.paint(canvas, rect);
           } else if (item is LevelMap) {
-            paint.color = Colors.yellow.shade300;
+            Sprites.map.paint(canvas, rect);
           } else if (item is HealOne) {
-            paint.color = const Color.fromARGB(255, 27, 200, 125);
+            Sprites.heart.paint(canvas, rect);
           } else if (item is HealAll) {
-            paint.color = const Color.fromARGB(255, 27, 200, 36);
+            Sprites.sparkleHeart.paint(canvas, rect);
           }
-          canvas.drawRect(rectForPosition(Position(i, j), cellSize), paint);
         }
       }
     }
