@@ -251,8 +251,22 @@ class World {
   World(this.size, this.levels);
 }
 
-enum Item {
-  key,
+abstract class Item {
+  void onPickup(GameState state);
+}
+
+class PortalKey extends Item {
+  @override
+  void onPickup(GameState state) {
+    state.currentLevelState.unlockExit();
+  }
+}
+
+class LevelMap extends Item {
+  @override
+  void onPickup(GameState state) {
+    state.currentLevelState.revealAll();
+  }
 }
 
 class Player {
@@ -378,13 +392,15 @@ class LevelState {
   List<Mob> mobs;
   Grid<bool> revealed;
   Grid<Item?> itemGrid;
+  bool exitUnlocked;
 
   LevelState.spawn(this.level, this.levelIndex, Random random)
       : mobs = [],
         revealed = Grid<bool>.filled(level.size, () => false),
-        itemGrid = Grid<Item?>.filled(level.size, () => null) {
+        itemGrid = Grid<Item?>.filled(level.size, () => null),
+        exitUnlocked = false {
     spawnMobs(levelIndex, random);
-    spawnKey(random);
+    spawnItems(random);
   }
 
   void spawnMobs(int count, Random random) {
@@ -395,9 +411,12 @@ class LevelState {
     }
   }
 
-  void spawnKey(Random random) {
+  void spawnItems(Random random) {
     var keyLocation = getItemSpawnLocation(random);
-    setItemAt(keyLocation, Item.key);
+    setItemAt(keyLocation, PortalKey());
+
+    var mapLocation = getItemSpawnLocation(random);
+    setItemAt(mapLocation, LevelMap());
   }
 
   bool isRevealed(Position position) => revealed.get(position) ?? false;
@@ -454,6 +473,31 @@ class LevelState {
       }
     }
     return null;
+  }
+
+  void unlockExit() {
+    exitUnlocked = true;
+  }
+
+  void revealAll() {
+    for (var position in level.allPositions) {
+      revealed.set(position, true);
+    }
+  }
+
+  // FIXME: Should be a Mob not player.
+  bool canMove(Player player, Delta delta) {
+    if (delta.isZero) {
+      return false;
+    }
+    var targetPosition = player.location.apply(delta);
+
+    if (targetPosition == level.exit) {
+      return exitUnlocked;
+    }
+
+    var targetCell = level.getCell(targetPosition);
+    return targetCell.isPassable;
   }
 }
 
@@ -516,22 +560,11 @@ class GameState {
     if (mob != null) {
       return PlayerAttackAction(target: target, player: player);
     }
-    if (canMove(player, delta)) {
+    if (currentLevelState.canMove(player, delta)) {
       return PlayerMoveAction(
           destination: player.location.apply(delta), player: player);
     }
     return null;
-  }
-
-  // FIXME: Not clear this belongs here?
-  bool canMove(Player player, Delta delta) {
-    if (delta.isZero) {
-      return false;
-    }
-    var targetPosition = player.location.apply(delta);
-    var targetCell = currentLevel.getCell(targetPosition);
-    // FIXME: Exit isn't passable w/o a key?
-    return targetCell.isPassable;
   }
 
   void updateVisibility() {
@@ -547,7 +580,7 @@ class GameState {
     }
     var item = currentLevelState.pickupItem(player.location);
     if (item != null) {
-      player.inventory.add(item);
+      item.onPickup(this);
     } else if (player.location == currentLevel.exit) {
       spawnInLevel(_currentLevelIndex + 1, NamedLocation.entrance);
     } else if (player.location == currentLevel.enter &&

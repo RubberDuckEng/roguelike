@@ -66,7 +66,11 @@ class WorldPainter extends CustomPainter {
       for (int j = 0; j < gameState.world.height; ++j) {
         var item = gameState.currentLevelState.itemAt(Position(i, j));
         if (item != null) {
-          paint.color = Colors.pink.shade300;
+          if (item is PortalKey) {
+            paint.color = Colors.pink.shade300;
+          } else if (item is LevelMap) {
+            paint.color = Colors.yellow.shade300;
+          }
           canvas.drawRect(rectForPosition(Position(i, j), cellSize), paint);
         }
       }
