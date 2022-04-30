@@ -281,6 +281,13 @@ class LevelMap extends Item {
   }
 }
 
+class HeathUp extends Item {
+  @override
+  void onPickup(GameState state) {
+    state.player.applyHealthChange(1);
+  }
+}
+
 class Mob {
   Position location;
 
@@ -290,7 +297,8 @@ class Mob {
 }
 
 class Player extends Mob {
-  int health = 10;
+  int maxHealth = 10;
+  int currentHealth = 10;
   List<Item> inventory;
 
   Player.spawn(Position location)
@@ -299,13 +307,23 @@ class Player extends Mob {
 
   double get lightRadius => 1.5;
 
+  int get missingHealth => maxHealth - currentHealth;
+
   void move(Delta delta) {
     location += delta;
   }
 
+  void applyHealthChange(int amount) {
+    currentHealth += amount;
+    if (currentHealth < 0) {
+      // die;
+    }
+    currentHealth = min(currentHealth, maxHealth);
+  }
+
   @override
   void hit(GameState state) {
-    health -= 1;
+    applyHealthChange(-1);
   }
 }
 

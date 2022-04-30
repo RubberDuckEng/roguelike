@@ -120,13 +120,14 @@ class WorldPainter extends CustomPainter {
 }
 
 class HealthPip extends StatelessWidget {
-  const HealthPip({super.key});
+  final bool full;
+  const HealthPip({super.key, this.full = true});
 
   @override
   Widget build(BuildContext context) {
-    return const Icon(
+    return Icon(
       Icons.favorite,
-      color: Colors.pink,
+      color: full ? Colors.pink : Colors.grey,
     );
   }
 }
@@ -144,7 +145,10 @@ class HealthIndicator extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        for (int i = 0; i < gameState.player.health; ++i) const HealthPip(),
+        for (int i = 0; i < gameState.player.currentHealth; ++i)
+          const HealthPip(full: true),
+        for (int i = 0; i < gameState.player.missingHealth; ++i)
+          const HealthPip(full: false),
       ],
     );
   }
