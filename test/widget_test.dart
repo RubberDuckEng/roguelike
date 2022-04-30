@@ -92,4 +92,19 @@ void main() {
 
     expect(passableCellCount(level), 90);
   });
+
+  test('MazeLevelGenerator fillUnreachableCells', () {
+    final generator = MazeLevelGenerator(
+      size: const ISize(3, 3),
+      start: const Position(0, 0),
+      end: const Position(1, 0),
+      random: Random(0),
+    );
+    generator.level.setCell(const Position(0, 1), const Cell.wall());
+    generator.level.setCell(const Position(1, 2), const Cell.wall());
+
+    expect(generator.level.isPassable(const Position(0, 2)), isTrue);
+    generator.fillUnreachableCells();
+    expect(generator.level.isPassable(const Position(0, 2)), isFalse);
+  });
 }

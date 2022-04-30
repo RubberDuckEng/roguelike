@@ -214,6 +214,7 @@ class MazeLevelGenerator {
       var generator = MazeLevelGenerator(
           size: size, start: start, end: end, random: random);
       generator.addManyWalls(20);
+      generator.fillUnreachableCells();
       yield generator.level;
       count -= 1;
       start = generator.level.exit;
@@ -236,6 +237,17 @@ class MazeLevelGenerator {
   void addManyWalls(int numberOfWalls) {
     for (int i = 0; i < numberOfWalls; ++i) {
       addWall();
+    }
+  }
+
+  void fillUnreachableCells() {
+    for (var position in level.allPositions) {
+      var cell = level.getCell(position);
+      if (cell.isPassable) {
+        if (!level.hasPathBetween(start, position)) {
+          level.setCell(position, const Cell.wall());
+        }
+      }
     }
   }
 }
