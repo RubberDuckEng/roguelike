@@ -69,7 +69,7 @@ class WorldPainter extends CustomPainter {
           } else if (item is HealOne) {
             Sprites.heart.paint(canvas, rect);
           } else if (item is HealAll) {
-            Sprites.sparkle_heart.paint(canvas, rect);
+            Sprites.sparkleHeart.paint(canvas, rect);
           }
         }
       }

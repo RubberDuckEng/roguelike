@@ -1,6 +1,6 @@
 import 'dart:ui';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide TextStyle;
 
 abstract class Sprite {
   const Sprite();
@@ -11,8 +11,18 @@ abstract class Sprite {
 @immutable
 class IconSprite extends Sprite {
   final IconData data;
+  final Color? color;
 
-  const IconSprite(this.data);
+  const IconSprite(this.data, {this.color});
+
+  IconSprite copyWith({
+    Color? color,
+  }) {
+    return IconSprite(
+      data,
+      color: color ?? this.color,
+    );
+  }
 
   @override
   void paint(Canvas canvas, Rect rect) {
@@ -22,6 +32,9 @@ class IconSprite extends Sprite {
         fontSize: rect.shortestSide * 0.8,
       ),
     );
+    if (color != null) {
+      builder.pushStyle(TextStyle(color: color));
+    }
     builder.addText(String.fromCharCode(data.codePoint));
     final paragraph = builder.build();
     paragraph.layout(const ParagraphConstraints(width: double.infinity));
@@ -34,10 +47,10 @@ class IconSprite extends Sprite {
 class Sprites {
   Sprites._();
 
-  static const Sprite key = IconSprite(IconData(0x1F511));
-  static const Sprite map = IconSprite(IconData(0x1F5FA));
-  static const Sprite heart = IconSprite(IconData(0x1F49C));
-  static const Sprite sparkle_heart = IconSprite(IconData(0x1F496));
-  static const Sprite alien_monster = IconSprite(IconData(0x1F47E));
-  static const Sprite flutter_dash = IconSprite(Icons.flutter_dash);
+  static const IconSprite key = IconSprite(IconData(0x1F511));
+  static const IconSprite map = IconSprite(IconData(0x1F5FA));
+  static const IconSprite heart = IconSprite(IconData(0x1F49C));
+  static const IconSprite sparkleHeart = IconSprite(IconData(0x1F496));
+  static const IconSprite alienMonster = IconSprite(IconData(0x1F47E));
+  static const IconSprite flutterDash = IconSprite(Icons.flutter_dash);
 }

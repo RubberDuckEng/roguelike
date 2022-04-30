@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:flutter/material.dart';
+
 import 'geometry.dart';
 import 'sprite.dart';
 
@@ -320,7 +322,8 @@ class Player extends Mob {
   int get missingHealth => maxHealth - currentHealth;
 
   @override
-  Sprite get sprite => Sprites.flutterDash;
+  Sprite get sprite =>
+      Sprites.flutterDash.copyWith(color: Colors.blue.shade800);
 
   void move(Delta delta) {
     location += delta;
