@@ -278,6 +278,7 @@ class Mob {
 }
 
 class Player extends Mob {
+  int health = 10;
   List<Item> inventory;
 
   Player.spawn(Position location)
@@ -288,6 +289,11 @@ class Player extends Mob {
 
   void move(Delta delta) {
     location = location.apply(delta);
+  }
+
+  @override
+  void hit(GameState state) {
+    health -= 1;
   }
 }
 
