@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'model.dart';
+import 'geometry.dart';
 
 class WorldPainter extends CustomPainter {
   final GameState gameState;
