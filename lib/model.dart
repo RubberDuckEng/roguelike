@@ -277,9 +277,13 @@ class MazeLevelGenerator {
         _random = random ?? Random();
 
   static Iterable<Level> generateLevels(
-      ISize size, int count, Random random) sync* {
+    ISize size,
+    Random random, {
+    Position? enter,
+    int count = 1,
+  }) sync* {
+    var start = enter ?? _getRandomPosition(size, random);
     while (count > 0) {
-      var start = _getRandomPosition(size, random);
       var end = _getRandomPositionWithCondition(
           size, random, (position) => position != start);
       var generator = MazeLevelGenerator(
@@ -287,6 +291,7 @@ class MazeLevelGenerator {
       generator.addManyWalls(20);
       yield generator.level;
       count -= 1;
+      start = generator.level.exit;
     }
   }
 
@@ -487,7 +492,10 @@ class GameState {
         random = Random(seed),
         _currentLevelIndex = 0 {
     world = World(
-        size, MazeLevelGenerator.generateLevels(size, 2, random).toList());
+        size,
+        MazeLevelGenerator.generateLevels(size, random,
+                enter: _getRandomPosition(size, random))
+            .toList());
     initializeMissingLevelStates(random);
     player = Player.spawn(const Position(0, 0));
     spawnInLevel(0, NamedLocation.entrance);
@@ -505,9 +513,10 @@ class GameState {
   void spawnInLevel(int index, NamedLocation location) {
     int missing = index - world.levels.length + 1;
     if (missing > 0) {
-      var newLevels =
-          MazeLevelGenerator.generateLevels(world.size, missing, random)
-              .toList();
+      var start = world.levels.isNotEmpty ? world.levels.last.exit : null;
+      var newLevels = MazeLevelGenerator.generateLevels(world.size, random,
+              enter: start, count: missing)
+          .toList();
       world.levels.addAll(newLevels);
       initializeMissingLevelStates(random);
     }
