@@ -70,6 +70,10 @@ class WorldPainter extends CustomPainter {
             paint.color = Colors.pink.shade300;
           } else if (item is LevelMap) {
             paint.color = Colors.yellow.shade300;
+          } else if (item is HealOne) {
+            paint.color = const Color.fromARGB(255, 27, 200, 125);
+          } else if (item is HealAll) {
+            paint.color = const Color.fromARGB(255, 27, 200, 36);
           }
           canvas.drawRect(rectForPosition(Position(i, j), cellSize), paint);
         }

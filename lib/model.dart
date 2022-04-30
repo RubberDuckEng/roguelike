@@ -281,10 +281,17 @@ class LevelMap extends Item {
   }
 }
 
-class HeathUp extends Item {
+class HealOne extends Item {
   @override
   void onPickup(GameState state) {
     state.player.applyHealthChange(1);
+  }
+}
+
+class HealAll extends Item {
+  @override
+  void onPickup(GameState state) {
+    state.player.applyHealthChange(state.player.maxHealth);
   }
 }
 
@@ -459,12 +466,17 @@ class LevelState {
     }
   }
 
-  void spawnItems(Random random) {
-    var keyLocation = getItemSpawnLocation(random);
-    setItemAt(keyLocation, PortalKey());
+  void spawnOneItem(Item item, Random random, {double chance = 1.0}) {
+    if (random.nextDouble() < chance) {
+      setItemAt(getItemSpawnLocation(random), item);
+    }
+  }
 
-    var mapLocation = getItemSpawnLocation(random);
-    setItemAt(mapLocation, LevelMap());
+  void spawnItems(Random random) {
+    spawnOneItem(PortalKey(), random);
+    spawnOneItem(LevelMap(), random);
+    spawnOneItem(HealOne(), random, chance: 0.70);
+    spawnOneItem(HealAll(), random, chance: 0.05);
   }
 
   bool isRevealed(Position position) => revealed.get(position) ?? false;
