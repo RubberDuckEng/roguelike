@@ -129,25 +129,20 @@ class Cell {
   }
 }
 
-class Level {
-  final List<List<Cell>> _cells;
-  final Position enter;
-  final Position exit;
+class Grid<T> {
+  final List<List<T>> _cells;
 
-  Level(this._cells, {required this.enter, required this.exit});
+  Grid(this._cells);
 
-  Level.empty(ISize size, {required this.enter, required this.exit})
+  Grid.filled(ISize size, T Function() create)
       : _cells = List.generate(
-            size.height,
-            (index) =>
-                List.generate(size.width, (index) => const Cell.empty()));
+            size.height, (index) => List.generate(size.width, (_) => create()));
 
   ISize get size => ISize(width, height);
   int get width => _cells.first.length;
   int get height => _cells.length;
 
-  // Should this be on an LevelBuilder instead?
-  void setCell(Position position, Cell cell) {
+  void set(Position position, T cell) {
     if (position.y < 0 || position.y >= _cells.length) {
       throw ArgumentError.value(position);
     }
@@ -158,18 +153,39 @@ class Level {
     row[position.x] = cell;
   }
 
-  Cell getCell(Position position) {
+  T? get(Position position) {
     if (position.y < 0 || position.y >= _cells.length) {
-      return const Cell.outOfBounds();
+      return null;
     }
     final row = _cells[position.y];
     if (position.x < 0 || position.x >= row.length) {
-      return const Cell.outOfBounds();
+      return null;
     }
     return row[position.x];
   }
+}
+
+class Level {
+  final Grid<Cell> grid;
+  final Position enter;
+  final Position exit;
+
+  // For testing
+  Level(List<List<Cell>> cells, {required this.enter, required this.exit})
+      : grid = Grid(cells);
+
+  Level.empty(ISize size, {required this.enter, required this.exit})
+      : grid = Grid<Cell>.filled(size, () => const Cell.empty());
+
+  ISize get size => grid.size;
+  int get width => grid.width;
+  int get height => grid.height;
 
   bool isPassable(Position position) => getCell(position).isPassable;
+
+  Cell getCell(Position position) =>
+      grid.get(position) ?? const Cell.outOfBounds();
+  void setCell(Position position, Cell cell) => grid.set(position, cell);
 
   Iterable<Position> traversableNeighbors(Position position) sync* {
     var deltas = const [Delta.up(), Delta.down(), Delta.left(), Delta.right()];
@@ -216,7 +232,7 @@ class Level {
   @override
   String toString() {
     final buffer = StringBuffer();
-    for (var row in _cells) {
+    for (var row in grid._cells) {
       for (var cell in row) {
         buffer.write(cell.toCharRepresentation());
       }
