@@ -369,7 +369,7 @@ class AttackAction extends Action {
 
   @override
   void execute(GameState state) {
-    state.currentLevelState.enemyAt(target).hit();
+    state.currentLevelState.enemyAt(target)?.hit(state);
   }
 }
 
