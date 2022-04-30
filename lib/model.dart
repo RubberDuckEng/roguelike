@@ -197,6 +197,16 @@ class Level {
     }
   }
 
+  Iterable<Position> neighbors(Position position) sync* {
+    var deltas = const [Delta.up(), Delta.down(), Delta.left(), Delta.right()];
+    for (var delta in deltas) {
+      var neighbor = position.apply(delta);
+      if (grid.get(position) != null) {
+        yield neighbor;
+      }
+    }
+  }
+
   bool hasPathBetween(Position start, Position end) {
     if (!isPassable(start)) {
       return false;
@@ -437,8 +447,11 @@ class LevelState {
   final Level level;
   final int levelIndex;
   List<Mob> mobs;
+  Grid<bool> revealed;
 
-  LevelState.spawn(this.level, this.levelIndex, Random random) : mobs = [] {
+  LevelState.spawn(this.level, this.levelIndex, Random random)
+      : mobs = [],
+        revealed = Grid<bool>.filled(level.size, () => false) {
     for (int i = 0; i < levelIndex; ++i) {
       final mob = Mob.spawn(getMobSpawnLocation(random));
       mob.brain = RandomMover(mob);
@@ -499,6 +512,7 @@ class GameState {
     initializeMissingLevelStates(random);
     player = Player.spawn(const Position(0, 0));
     spawnInLevel(0, NamedLocation.entrance);
+    updateVisibility();
   }
 
   void initializeMissingLevelStates(Random random) {
@@ -549,6 +563,12 @@ class GameState {
     return targetCell.isPassable;
   }
 
+  void updateVisibility() {
+    for (var position in currentLevel.neighbors(player.location)) {
+      currentLevelState.revealed.set(position, true);
+    }
+  }
+
   void nextTurn() {
     for (var mob in currentLevelState.mobs) {
       mob.update(this);
@@ -559,5 +579,6 @@ class GameState {
         _currentLevelIndex > 1) {
       spawnInLevel(_currentLevelIndex - 1, NamedLocation.exit);
     }
+    updateVisibility();
   }
 }

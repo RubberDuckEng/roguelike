@@ -8,7 +8,7 @@ class WorldPainter extends CustomPainter {
 
   WorldPainter(this.gameState);
 
-  void paintBackground(Canvas canvas, Size size, Size cellSize) {
+  void paintBackground(Canvas canvas, Size cellSize) {
     final paint = Paint();
     paint.style = PaintingStyle.fill;
     for (int i = 0; i < gameState.world.width; ++i) {
@@ -55,19 +55,36 @@ class WorldPainter extends CustomPainter {
     canvas.drawCircle(rect.center, rect.width / 2.0, paint);
   }
 
+  // This doesn't actually do fog of war yet, just mapped or not.
+  void paintFogOfWar(Canvas canvas, Size cellSize) {
+    final paint = Paint();
+    paint.style = PaintingStyle.fill;
+    for (int i = 0; i < gameState.world.width; ++i) {
+      for (int j = 0; j < gameState.world.height; ++j) {
+        var isRevealed =
+            gameState.currentLevelState.revealed.get(Position(i, j)) ?? false;
+        if (!isRevealed) {
+          paint.color = Colors.black;
+          canvas.drawRect(rectForPosition(Position(i, j), cellSize), paint);
+        }
+      }
+    }
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
     final cellSize = Size(size.width / gameState.world.width,
         size.height / gameState.world.height);
-    paintBackground(canvas, size, cellSize);
+    paintBackground(canvas, cellSize);
     paintPortal(
         canvas, gameState.currentLevel.enter, Colors.green.shade500, cellSize);
     paintPortal(
         canvas, gameState.currentLevel.exit, Colors.purple.shade500, cellSize);
-    paintPlayer(canvas, cellSize);
     for (var mob in gameState.currentLevelState.mobs) {
       paintMob(canvas, cellSize, mob);
     }
+    paintPlayer(canvas, cellSize);
+    paintFogOfWar(canvas, cellSize);
   }
 
   @override
