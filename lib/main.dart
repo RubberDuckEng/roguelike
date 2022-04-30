@@ -45,18 +45,12 @@ class WorldPainter extends CustomPainter {
         (position.y + 0.5) * cellSize.height);
   }
 
-  void paintPlayer(Canvas canvas, Size cellSize) {
-    var paint = Paint();
-    paint.color = Colors.orange.shade500;
-    var rect = rectForPosition(gameState.player.location, cellSize);
-    canvas.drawCircle(rect.center, rect.width / 2.0, paint);
+  void paintPlayer(Canvas canvas, Size cellSize, Player player) {
+    player.sprite.paint(canvas, rectForPosition(player.location, cellSize));
   }
 
   void paintMob(Canvas canvas, Size cellSize, Mob mob) {
-    var paint = Paint();
-    paint.color = Colors.red.shade500;
-    var rect = rectForPosition(mob.location, cellSize);
-    canvas.drawCircle(rect.center, rect.width / 2.0, paint);
+    mob.sprite.paint(canvas, rectForPosition(mob.location, cellSize));
   }
 
   void paintItems(Canvas canvas, Size cellSize) {
@@ -75,7 +69,7 @@ class WorldPainter extends CustomPainter {
           } else if (item is HealOne) {
             Sprites.heart.paint(canvas, rect);
           } else if (item is HealAll) {
-            Sprites.sparkleHeart.paint(canvas, rect);
+            Sprites.sparkle_heart.paint(canvas, rect);
           }
         }
       }
@@ -114,7 +108,7 @@ class WorldPainter extends CustomPainter {
     for (var mob in gameState.currentLevelState.enemies) {
       paintMob(canvas, cellSize, mob);
     }
-    paintPlayer(canvas, cellSize);
+    paintPlayer(canvas, cellSize, gameState.player);
     paintFogOfWar(canvas, cellSize);
   }
 

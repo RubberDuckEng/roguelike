@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'geometry.dart';
+import 'sprite.dart';
 
 enum CellType {
   empty,
@@ -295,10 +296,12 @@ class HealAll extends Item {
   }
 }
 
-class Mob {
+abstract class Mob {
   Position location;
 
   Mob.spawn(this.location);
+
+  Sprite get sprite;
 
   void hit(GameState state) {}
 }
@@ -315,6 +318,8 @@ class Player extends Mob {
   double get lightRadius => 1.5;
 
   int get missingHealth => maxHealth - currentHealth;
+
+  Sprite get sprite => Sprites.flutter_dash;
 
   void move(Delta delta) {
     location += delta;
@@ -336,6 +341,8 @@ class Player extends Mob {
 
 class Enemy extends Mob {
   Brain? brain;
+
+  Sprite get sprite => Sprites.alien_monster;
 
   Enemy.spawn(Position location) : super.spawn(location);
 

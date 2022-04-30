@@ -1,6 +1,6 @@
 import 'dart:ui';
 
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 
 abstract class Sprite {
   const Sprite();
@@ -37,5 +37,7 @@ class Sprites {
   static const Sprite key = IconSprite(IconData(0x1F511));
   static const Sprite map = IconSprite(IconData(0x1F5FA));
   static const Sprite heart = IconSprite(IconData(0x1F49C));
-  static const Sprite sparkleHeart = IconSprite(IconData(0x1F496));
+  static const Sprite sparkle_heart = IconSprite(IconData(0x1F496));
+  static const Sprite alien_monster = IconSprite(IconData(0x1F47E));
+  static const Sprite flutter_dash = IconSprite(Icons.flutter_dash);
 }
