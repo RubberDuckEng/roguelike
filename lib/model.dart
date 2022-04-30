@@ -318,7 +318,7 @@ abstract class Brain {
   void update(GameState state);
 }
 
-class RandomMover extends Brain {
+class Wanderer extends Brain {
   List<Delta> possibleMoves = [
     const Delta.up(),
     const Delta.down(),
@@ -329,31 +329,42 @@ class RandomMover extends Brain {
   final Mob mob;
   final Random _random;
 
-  RandomMover(this.mob, {int? seed}) : _random = Random(seed);
+  Wanderer(this.mob, {int? seed}) : _random = Random(seed);
 
-  Iterable<Position> legalMoves(GameState state) sync* {
+  Iterable<Action> possibleActions(GameState state) sync* {
     for (var delta in possibleMoves) {
       var position = mob.location + delta;
       if (!state.currentLevel.isPassable(position)) {
         continue;
       }
-      if (state.player.location == position) {
-        continue;
-      }
       if (state.currentLevelState.enemyAt(position) != null) {
         continue;
       }
-      yield position;
+      if (state.player.location == position) {
+        yield AttackAction(target: position, mob: mob);
+      }
+      yield MoveAction(destination: position, mob: mob);
     }
+  }
+
+  Action? selectAction(GameState state) {
+    var actions = possibleActions(state).toList();
+    if (actions.isEmpty) {
+      return null;
+    }
+    return actions.firstWhere(
+      (element) => element is AttackAction,
+      orElse: () {
+        final index = _random.nextInt(actions.length);
+        return actions[index];
+      },
+    );
   }
 
   @override
   void update(GameState state) {
-    var positions = legalMoves(state).toList();
-    if (positions.isNotEmpty) {
-      final index = _random.nextInt(positions.length);
-      mob.location = positions[index];
-    }
+    final action = selectAction(state);
+    action?.execute(state);
   }
 }
 
@@ -389,7 +400,7 @@ class AttackAction extends Action {
 
   @override
   void execute(GameState state) {
-    state.currentLevelState.enemyAt(target)?.hit(state);
+    state.mobAt(target)?.hit(state);
   }
 }
 
@@ -413,7 +424,7 @@ class LevelState {
   void spawnEnemies(int count, Random random) {
     for (int i = 0; i < count; ++i) {
       final enemy = Enemy.spawn(getEnemySpawnLocation(random));
-      enemy.brain = RandomMover(enemy);
+      enemy.brain = Wanderer(enemy);
       enemies.add(enemy);
     }
   }
@@ -569,6 +580,24 @@ class GameState {
       return MoveAction(destination: player.location + delta, mob: player);
     }
     return null;
+  }
+
+  Mob? mobAt(Position position) {
+    if (player.location == position) {
+      return player;
+    }
+    return currentLevelState.enemyAt(position);
+  }
+
+  // FIXME: Not clear this belongs here?
+  bool canMove(Player player, Delta delta) {
+    if (delta.isZero) {
+      return false;
+    }
+    var targetPosition = player.location.apply(delta);
+    var targetCell = currentLevel.getCell(targetPosition);
+    // FIXME: Exit isn't passable w/o a key?
+    return targetCell.isPassable;
   }
 
   void updateVisibility() {

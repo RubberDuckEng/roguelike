@@ -270,12 +270,12 @@ class _GamePageState extends State<GamePage> {
               if (event is RawKeyDownEvent) {
                 var delta = deltaFromKey(event);
                 var playerAction = gameState.actionFor(gameState.player, delta);
-                if (playerAction != null) {
-                  setState(() {
+                setState(() {
+                  if (playerAction != null) {
                     playerAction.execute(gameState);
-                    gameState.nextTurn();
-                  });
-                }
+                  }
+                  gameState.nextTurn();
+                });
               }
             },
             child: WorldView(
