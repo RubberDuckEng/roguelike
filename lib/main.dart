@@ -57,6 +57,21 @@ class WorldPainter extends CustomPainter {
     canvas.drawCircle(rect.center, rect.width / 2.0, paint);
   }
 
+  void paintItems(Canvas canvas, Size cellSize) {
+    final paint = Paint();
+    paint.isAntiAlias = false;
+    paint.style = PaintingStyle.fill;
+    for (int i = 0; i < gameState.world.width; ++i) {
+      for (int j = 0; j < gameState.world.height; ++j) {
+        var item = gameState.currentLevelState.itemAt(Position(i, j));
+        if (item != null) {
+          paint.color = Colors.blue.shade300;
+          canvas.drawRect(rectForPosition(Position(i, j), cellSize), paint);
+        }
+      }
+    }
+  }
+
   // This doesn't actually do fog of war yet, just mapped or not.
   void paintFogOfWar(Canvas canvas, Size cellSize) {
     final paint = Paint();
@@ -64,8 +79,7 @@ class WorldPainter extends CustomPainter {
     paint.style = PaintingStyle.fill;
     for (int i = 0; i < gameState.world.width; ++i) {
       for (int j = 0; j < gameState.world.height; ++j) {
-        var isRevealed =
-            gameState.currentLevelState.revealed.get(Position(i, j)) ?? false;
+        var isRevealed = gameState.currentLevelState.isRevealed(Position(i, j));
         if (!isRevealed) {
           paint.color = Colors.black;
           canvas.drawRect(rectForPosition(Position(i, j), cellSize), paint);

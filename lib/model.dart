@@ -465,11 +465,14 @@ class LevelState {
   final int levelIndex;
   List<Mob> mobs;
   Grid<bool> revealed;
+  Grid<Item?> itemGrid;
 
   LevelState.spawn(this.level, this.levelIndex, Random random)
       : mobs = [],
-        revealed = Grid<bool>.filled(level.size, () => false) {
+        revealed = Grid<bool>.filled(level.size, () => false),
+        itemGrid = Grid<Item?>.filled(level.size, () => null) {
     spawnMobs(levelIndex, random);
+    spawnKey(random);
   }
 
   void spawnMobs(int count, Random random) {
@@ -478,6 +481,28 @@ class LevelState {
       mob.brain = RandomMover(mob);
       mobs.add(mob);
     }
+  }
+
+  void spawnKey(Random random) {
+    var keyLocation = getItemSpawnLocation(random);
+    itemGrid.set(keyLocation, Item.key);
+  }
+
+  bool isRevealed(Position position) => revealed.get(position) ?? false;
+
+  Item? itemAt(Position position) => itemGrid.get(position);
+
+  Position getItemSpawnLocation(Random random) {
+    return _getRandomPositionWithCondition(level.size, random,
+        (Position position) {
+      if (!level.isPassable(position)) {
+        return false;
+      }
+      if (position == level.enter || position == level.exit) {
+        return false;
+      }
+      return itemAt(position) == null;
+    });
   }
 
   Position getMobSpawnLocation(Random random) {
