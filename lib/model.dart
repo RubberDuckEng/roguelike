@@ -640,17 +640,6 @@ class GameState {
     return currentLevelState.enemyAt(position);
   }
 
-  // FIXME: Not clear this belongs here?
-  bool canMove(Player player, Delta delta) {
-    if (delta.isZero) {
-      return false;
-    }
-    var targetPosition = player.location + delta;
-    var targetCell = currentLevel.getCell(targetPosition);
-    // FIXME: Exit isn't passable w/o a key?
-    return targetCell.isPassable;
-  }
-
   void updateVisibility() {
     for (var position in currentLevel.nearbyPositions(player.location,
         radius: player.lightRadius)) {
