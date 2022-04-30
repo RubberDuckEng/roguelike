@@ -142,6 +142,7 @@ class Level {
             (index) =>
                 List.generate(size.width, (index) => const Cell.empty()));
 
+  ISize get size => ISize(width, height);
   int get width => _cells.first.length;
   int get height => _cells.length;
 
@@ -399,49 +400,25 @@ class PlayerAttackAction extends PlayerAction {
   @override
   void execute(GameState state) {
     List<Mob> doomed = [];
-    for (var mob in state.mobs) {
+    for (var mob in state.currentLevelState.mobs) {
       if (mob.location == target) {
         doomed.add(mob);
       }
     }
+    // Could this fail if an attack and level change happen on the same action?
     for (var mob in doomed) {
-      state.mobs.remove(mob);
+      state.currentLevelState.mobs.remove(mob);
     }
   }
 }
 
-class GameState {
-  late World world;
-  late Player player;
+class LevelState {
+  final Level level;
+  final int levelIndex;
   List<Mob> mobs;
-  int currentLevelIndex; // Currently unused.
-  final Random random;
 
-  Level get currentLevel => world.levels[currentLevelIndex];
-
-  GameState.demo({
-    ISize size = const ISize(10, 10),
-    int? seed,
-  })  : random = Random(seed),
-        currentLevelIndex = 0,
-        mobs = [] {
-    world = World(
-        size, MazeLevelGenerator.generateLevels(size, 2, random).toList());
-    player = Player.spawn(const Position(0, 0));
-    spawnInLevel(0, NamedLocation.entrance);
-  }
-
-  void spawnInLevel(int index, NamedLocation location) {
-    int missing = index - world.levels.length + 1;
-    if (missing > 0) {
-      world.levels.addAll(
-          MazeLevelGenerator.generateLevels(world.size, missing, random));
-    }
-    currentLevelIndex = index;
-    player.location = currentLevel.positionForNamedLocation(location);
-    // TODO: Mobs state should be split out into a LevelState.
-    mobs.clear();
-    for (int i = 0; i < index; ++i) {
+  LevelState.spawn(this.level, this.levelIndex, Random random) : mobs = [] {
+    for (int i = 0; i < levelIndex; ++i) {
       final mob = Mob.spawn(getMobSpawnLocation(random));
       mob.brain = RandomMover(mob);
       mobs.add(mob);
@@ -449,12 +426,12 @@ class GameState {
   }
 
   Position getMobSpawnLocation(Random random) {
-    return _getRandomPositionWithCondition(world.size, random,
+    return _getRandomPositionWithCondition(level.size, random,
         (Position position) {
-      if (!currentLevel.isPassable(position)) {
+      if (!level.isPassable(position)) {
         return false;
       }
-      if (player.location == position) {
+      if (position == level.enter || position == level.exit) {
         return false;
       }
       for (var mob in mobs) {
@@ -466,24 +443,73 @@ class GameState {
     });
   }
 
+  Mob? mobAt(Position position) {
+    for (var mob in mobs) {
+      if (mob.location == position) {
+        return mob;
+      }
+    }
+    return null;
+  }
+}
+
+class GameState {
+  late World world;
+  late Player player;
+  List<LevelState> levelStates; // Should this be a sparse array or map?
+  int _currentLevelIndex;
+  final Random random;
+
+  LevelState get currentLevelState => levelStates[_currentLevelIndex];
+  Level get currentLevel => levelStates[_currentLevelIndex].level;
+  int get currentLevelNumber => _currentLevelIndex;
+
+  GameState.demo({
+    ISize size = const ISize(10, 10),
+    int? seed,
+  })  : levelStates = [],
+        random = Random(seed),
+        _currentLevelIndex = 0 {
+    world = World(
+        size, MazeLevelGenerator.generateLevels(size, 2, random).toList());
+    initializeMissingLevelStates(random);
+    player = Player.spawn(const Position(0, 0));
+    spawnInLevel(0, NamedLocation.entrance);
+  }
+
+  void initializeMissingLevelStates(Random random) {
+    for (int levelIndex = 0; levelIndex < world.levels.length; levelIndex++) {
+      if (levelStates.length <= levelIndex) {
+        var level = world.levels[levelIndex];
+        levelStates.add(LevelState.spawn(level, levelIndex, random));
+      }
+    }
+  }
+
+  void spawnInLevel(int index, NamedLocation location) {
+    int missing = index - world.levels.length + 1;
+    if (missing > 0) {
+      var newLevels =
+          MazeLevelGenerator.generateLevels(world.size, missing, random)
+              .toList();
+      world.levels.addAll(newLevels);
+      initializeMissingLevelStates(random);
+    }
+    // Do we need to tell the level the player is leaving?
+    _currentLevelIndex = index;
+    player.location = currentLevel.positionForNamedLocation(location);
+    // Do we need to tell the level the player is returning? (e.g respawn mobs?)
+  }
+
   PlayerAction? actionFor(Player player, Delta delta) {
     final target = player.location.apply(delta);
-    var mob = mobAt(target);
+    var mob = currentLevelState.mobAt(target);
     if (mob != null) {
       return PlayerAttackAction(target: target, player: player);
     }
     if (canMove(player, delta)) {
       return PlayerMoveAction(
           destination: player.location.apply(delta), player: player);
-    }
-    return null;
-  }
-
-  Mob? mobAt(Position position) {
-    for (var mob in mobs) {
-      if (mob.location == position) {
-        return mob;
-      }
     }
     return null;
   }
@@ -499,13 +525,14 @@ class GameState {
   }
 
   void nextTurn() {
-    for (var mob in mobs) {
+    for (var mob in currentLevelState.mobs) {
       mob.update(this);
     }
     if (player.location == currentLevel.exit) {
-      spawnInLevel(currentLevelIndex + 1, NamedLocation.entrance);
-    } else if (player.location == currentLevel.enter && currentLevelIndex > 1) {
-      spawnInLevel(currentLevelIndex - 1, NamedLocation.exit);
+      spawnInLevel(_currentLevelIndex + 1, NamedLocation.entrance);
+    } else if (player.location == currentLevel.enter &&
+        _currentLevelIndex > 1) {
+      spawnInLevel(_currentLevelIndex - 1, NamedLocation.exit);
     }
   }
 }

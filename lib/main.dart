@@ -65,7 +65,7 @@ class WorldPainter extends CustomPainter {
     paintPortal(
         canvas, gameState.currentLevel.exit, Colors.purple.shade500, cellSize);
     paintPlayer(canvas, cellSize);
-    for (var mob in gameState.mobs) {
+    for (var mob in gameState.currentLevelState.mobs) {
       paintMob(canvas, cellSize, mob);
     }
   }
@@ -142,7 +142,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: Center(
         child: Column(children: [
-          Text("Level: ${gameState.currentLevelIndex}"),
+          Text("Level: ${gameState.currentLevelNumber}"),
           Expanded(
             child: AspectRatio(
               aspectRatio: 1.0,
