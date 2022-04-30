@@ -498,11 +498,6 @@ class LevelState {
       return false;
     }
     var targetPosition = player.location.apply(delta);
-
-    if (targetPosition == level.exit) {
-      return exitUnlocked;
-    }
-
     var targetCell = level.getCell(targetPosition);
     return targetCell.isPassable;
   }
@@ -591,7 +586,8 @@ class GameState {
     var item = currentLevelState.pickupItem(player.location);
     if (item != null) {
       item.onPickup(this);
-    } else if (player.location == currentLevel.exit) {
+    } else if (player.location == currentLevel.exit &&
+        currentLevelState.exitUnlocked) {
       spawnInLevel(_currentLevelIndex + 1, NamedLocation.entrance);
     } else if (player.location == currentLevel.enter &&
         _currentLevelIndex > 1) {
