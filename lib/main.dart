@@ -16,7 +16,7 @@ class WorldPainter extends CustomPainter {
       for (int j = 0; j < gameState.world.height; ++j) {
         var cell = gameState.currentLevel.getCell(Position(i, j));
         if (cell.isPassable) {
-          paint.color = ((i + j) % 2 == 0) ? Colors.black12 : Colors.black26;
+          paint.color = Colors.brown.shade300;
         } else {
           paint.color = Colors.blue.shade300;
         }
@@ -120,9 +120,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Roguelike',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
+      theme: ThemeData.dark(),
       home: const MyHomePage(title: 'Roguelike'),
     );
   }
@@ -156,39 +154,31 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
-      body: Center(
-        child: Column(children: [
-          Text("Level: ${gameState.currentLevelNumber}"),
-          Expanded(
-            child: AspectRatio(
-              aspectRatio: 1.0,
-              child: RawKeyboardListener(
-                autofocus: true,
-                focusNode: focusNode,
-                onKey: (event) {
-                  if (event is RawKeyDownEvent) {
-                    var delta = deltaFromKey(event);
-                    var playerAction =
-                        gameState.actionFor(gameState.player, delta);
-                    if (playerAction != null) {
-                      setState(() {
-                        playerAction.execute(gameState);
-                        gameState.nextTurn();
-                      });
-                    }
-                  }
-                },
-                child: WorldView(
-                  gameState: gameState,
-                ),
-              ),
+    return Material(
+      color: Colors.black,
+      child: Center(
+        child: AspectRatio(
+          aspectRatio: 1.0,
+          child: RawKeyboardListener(
+            autofocus: true,
+            focusNode: focusNode,
+            onKey: (event) {
+              if (event is RawKeyDownEvent) {
+                var delta = deltaFromKey(event);
+                var playerAction = gameState.actionFor(gameState.player, delta);
+                if (playerAction != null) {
+                  setState(() {
+                    playerAction.execute(gameState);
+                    gameState.nextTurn();
+                  });
+                }
+              }
+            },
+            child: WorldView(
+              gameState: gameState,
             ),
           ),
-        ]),
+        ),
       ),
     );
   }
