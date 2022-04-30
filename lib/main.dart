@@ -10,6 +10,7 @@ class WorldPainter extends CustomPainter {
 
   void paintBackground(Canvas canvas, Size cellSize) {
     final paint = Paint();
+    paint.isAntiAlias = false;
     paint.style = PaintingStyle.fill;
     for (int i = 0; i < gameState.world.width; ++i) {
       for (int j = 0; j < gameState.world.height; ++j) {
@@ -27,6 +28,7 @@ class WorldPainter extends CustomPainter {
   void paintPortal(
       Canvas canvas, Position position, Color color, Size cellSize) {
     final paint = Paint();
+    paint.isAntiAlias = false;
     paint.color = color;
     canvas.drawRect(rectForPosition(position, cellSize), paint);
   }
@@ -58,6 +60,7 @@ class WorldPainter extends CustomPainter {
   // This doesn't actually do fog of war yet, just mapped or not.
   void paintFogOfWar(Canvas canvas, Size cellSize) {
     final paint = Paint();
+    paint.isAntiAlias = false;
     paint.style = PaintingStyle.fill;
     for (int i = 0; i < gameState.world.width; ++i) {
       for (int j = 0; j < gameState.world.height; ++j) {
