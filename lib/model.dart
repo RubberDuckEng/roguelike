@@ -197,14 +197,16 @@ class Level {
     }
   }
 
-  Iterable<Position> neighbors(Position position) sync* {
+  Iterable<Position> nearbyPositions(Position position) sync* {
     var deltas = const [Delta.up(), Delta.down(), Delta.left(), Delta.right()];
     for (var delta in deltas) {
       var neighbor = position.apply(delta);
-      if (grid.get(position) != null) {
+      if (grid.get(neighbor) != null) {
         yield neighbor;
       }
     }
+    // Include self?
+    yield position;
   }
 
   bool hasPathBetween(Position start, Position end) {
@@ -564,7 +566,7 @@ class GameState {
   }
 
   void updateVisibility() {
-    for (var position in currentLevel.neighbors(player.location)) {
+    for (var position in currentLevel.nearbyPositions(player.location)) {
       currentLevelState.revealed.set(position, true);
     }
   }
