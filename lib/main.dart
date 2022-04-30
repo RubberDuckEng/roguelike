@@ -110,6 +110,28 @@ class WorldPainter extends CustomPainter {
   }
 }
 
+class LevelIndicator extends StatelessWidget {
+  final GameState gameState;
+
+  const LevelIndicator({
+    super.key,
+    required this.gameState,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.black54,
+        border: Border.all(color: Colors.white),
+      ),
+      padding: const EdgeInsets.all(8.0),
+      margin: const EdgeInsets.all(8.0),
+      child: Text("Level: ${gameState.currentLevelNumber}"),
+    );
+  }
+}
+
 class WorldView extends StatelessWidget {
   final GameState gameState;
 
@@ -117,8 +139,17 @@ class WorldView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: WorldPainter(gameState),
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        CustomPaint(
+          painter: WorldPainter(gameState),
+        ),
+        Align(
+          alignment: Alignment.bottomRight,
+          child: LevelIndicator(gameState: gameState),
+        )
+      ],
     );
   }
 }
@@ -135,18 +166,16 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Roguelike',
       theme: ThemeData.dark(),
-      home: const MyHomePage(title: 'Roguelike'),
+      home: const GamePage(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, required this.title}) : super(key: key);
-
-  final String title;
+class GamePage extends StatefulWidget {
+  const GamePage({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<GamePage> createState() => _GamePageState();
 }
 
 Delta deltaFromKey(RawKeyDownEvent event) {
@@ -162,7 +191,7 @@ Delta deltaFromKey(RawKeyDownEvent event) {
   return const Delta.zero();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _GamePageState extends State<GamePage> {
   final focusNode = FocusNode();
   GameState gameState = GameState.demo();
 
