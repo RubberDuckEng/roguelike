@@ -52,15 +52,14 @@ class Position {
 
   const Position(this.x, this.y);
 
-  // FIXME: Why isn't this operator+?
-  Position apply(Delta delta) => Position(x + delta.dx, y + delta.dy);
-
   Delta deltaTo(Position other) {
     return Delta(other.x - x, other.y - y);
   }
 
   @override
   String toString() => '($x, $y)';
+
+  Position operator +(Delta delta) => Position(x + delta.dx, y + delta.dy);
 
   @override
   bool operator ==(other) {

@@ -95,7 +95,7 @@ class Level {
   Iterable<Position> traversableNeighbors(Position position) sync* {
     var deltas = const [Delta.up(), Delta.down(), Delta.left(), Delta.right()];
     for (var delta in deltas) {
-      var neighbor = position.apply(delta);
+      var neighbor = position + delta;
       if (isPassable(neighbor)) {
         yield neighbor;
       }
@@ -288,7 +288,7 @@ class Player extends Mob {
   double get lightRadius => 1.5;
 
   void move(Delta delta) {
-    location = location.apply(delta);
+    location += delta;
   }
 
   @override
@@ -333,7 +333,7 @@ class RandomMover extends Brain {
 
   Iterable<Position> legalMoves(GameState state) sync* {
     for (var delta in possibleMoves) {
-      var position = mob.location.apply(delta);
+      var position = mob.location + delta;
       if (!state.currentLevel.isPassable(position)) {
         continue;
       }
@@ -492,12 +492,11 @@ class LevelState {
     }
   }
 
-  // FIXME: Should be a Mob not player.
-  bool canMove(Player player, Delta delta) {
+  bool canMove(Mob mob, Delta delta) {
     if (delta.isZero) {
       return false;
     }
-    var targetPosition = player.location.apply(delta);
+    var targetPosition = mob.location + delta;
     var targetCell = level.getCell(targetPosition);
     return targetCell.isPassable;
   }
@@ -561,13 +560,13 @@ class GameState {
   }
 
   Action? actionFor(Player player, Delta delta) {
-    final target = player.location.apply(delta);
+    final target = player.location + delta;
     final enemy = currentLevelState.enemyAt(target);
     if (enemy != null) {
       return AttackAction(target: target, mob: player);
     }
     if (currentLevelState.canMove(player, delta)) {
-      return MoveAction(destination: player.location.apply(delta), mob: player);
+      return MoveAction(destination: player.location + delta, mob: player);
     }
     return null;
   }
