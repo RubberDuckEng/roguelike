@@ -198,7 +198,7 @@ class _GamePageState extends State<GamePage> {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.black,
+      color: Colors.blueGrey,
       child: Center(
         child: AspectRatio(
           aspectRatio: 1.0,
