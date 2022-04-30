@@ -269,16 +269,42 @@ class LevelMap extends Item {
   }
 }
 
-class Player {
+class Mob {
   Position location;
+
+  Mob.spawn(this.location);
+
+  void hit(GameState state) {}
+}
+
+class Player extends Mob {
   List<Item> inventory;
 
-  Player.spawn(this.location) : inventory = [];
+  Player.spawn(Position location)
+      : inventory = [],
+        super.spawn(location);
 
   double get lightRadius => 1.5;
 
   void move(Delta delta) {
     location = location.apply(delta);
+  }
+}
+
+class Enemy extends Mob {
+  Brain? brain;
+
+  Enemy.spawn(Position location) : super.spawn(location);
+
+  void update(GameState state) {
+    if (brain != null) {
+      brain!.update(state);
+    }
+  }
+
+  @override
+  void hit(GameState state) {
+    state.currentLevelState.removeEnemy(this);
   }
 }
 
@@ -308,7 +334,7 @@ class RandomMover extends Brain {
       if (state.player.location == position) {
         continue;
       }
-      if (state.currentLevelState.mobAt(position) != null) {
+      if (state.currentLevelState.enemyAt(position) != null) {
         continue;
       }
       yield position;
@@ -325,89 +351,64 @@ class RandomMover extends Brain {
   }
 }
 
-class Mob {
-  Position location;
-  Brain? brain;
+abstract class Action {
+  final Mob mob;
 
-  Mob.spawn(this.location);
-
-  void update(GameState state) {
-    if (brain != null) {
-      brain!.update(state);
-    }
-  }
-}
-
-abstract class PlayerAction {
-  // TODO: Refactor actions to work with generic mobs and make player into mob.
-  final Player player;
-
-  PlayerAction({required this.player});
+  Action({required this.mob});
 
   void execute(GameState state);
 }
 
-class PlayerMoveAction extends PlayerAction {
+class MoveAction extends Action {
   final Position destination;
 
-  PlayerMoveAction({
+  MoveAction({
     required this.destination,
-    required super.player,
+    required super.mob,
   });
 
   @override
   void execute(GameState state) {
-    // TODO: Multiplayer?
-    assert(state.player == player);
-    state.player.location = destination;
+    mob.location = destination;
   }
 }
 
-class PlayerAttackAction extends PlayerAction {
+class AttackAction extends Action {
   final Position target;
 
-  PlayerAttackAction({
+  AttackAction({
     required this.target,
-    required super.player,
+    required super.mob,
   });
 
   @override
   void execute(GameState state) {
-    List<Mob> doomed = [];
-    for (var mob in state.currentLevelState.mobs) {
-      if (mob.location == target) {
-        doomed.add(mob);
-      }
-    }
-    // Could this fail if an attack and level change happen on the same action?
-    for (var mob in doomed) {
-      state.currentLevelState.mobs.remove(mob);
-    }
+    state.currentLevelState.enemyAt(target)?.hit(state);
   }
 }
 
 class LevelState {
   final Level level;
   final int levelIndex;
-  List<Mob> mobs;
+  List<Enemy> enemies;
   Grid<bool> revealed;
   Grid<Item?> itemGrid;
   bool exitUnlocked;
 
   LevelState.spawn(this.level, this.levelIndex, Random random)
-      : mobs = [],
+      : enemies = [],
         revealed = Grid<bool>.filled(level.size, () => false),
         itemGrid = Grid<Item?>.filled(level.size, () => null),
         exitUnlocked = false {
-    spawnMobs(levelIndex, random);
+    spawnEnemies(levelIndex, random);
     spawnItems(random);
   }
 
-  void spawnMobs(int count, Random random) {
+  void spawnEnemies(int count, Random random) {
     for (int i = 0; i < count; ++i) {
-      final mob = Mob.spawn(getMobSpawnLocation(random));
-      mob.brain = RandomMover(mob);
-      mobs.add(mob);
+      final enemy = Enemy.spawn(getEnemySpawnLocation(random));
+      enemy.brain = RandomMover(enemy);
+      enemies.add(enemy);
     }
   }
 
@@ -448,7 +449,7 @@ class LevelState {
     });
   }
 
-  Position getMobSpawnLocation(Random random) {
+  Position getEnemySpawnLocation(Random random) {
     return _getRandomPositionWithCondition(level.size, random,
         (Position position) {
       if (!level.isPassable(position)) {
@@ -457,8 +458,8 @@ class LevelState {
       if (position == level.enter || position == level.exit) {
         return false;
       }
-      for (var mob in mobs) {
-        if (mob.location == position) {
+      for (var enemy in enemies) {
+        if (enemy.location == position) {
           return false;
         }
       }
@@ -466,10 +467,10 @@ class LevelState {
     });
   }
 
-  Mob? mobAt(Position position) {
-    for (var mob in mobs) {
-      if (mob.location == position) {
-        return mob;
+  Enemy? enemyAt(Position position) {
+    for (var enemy in enemies) {
+      if (enemy.location == position) {
+        return enemy;
       }
     }
     return null;
@@ -498,6 +499,10 @@ class LevelState {
 
     var targetCell = level.getCell(targetPosition);
     return targetCell.isPassable;
+  }
+
+  void removeEnemy(Enemy enemy) {
+    enemies.remove(enemy);
   }
 }
 
@@ -554,15 +559,14 @@ class GameState {
     // Do we need to tell the level the player is returning? (e.g respawn mobs?)
   }
 
-  PlayerAction? actionFor(Player player, Delta delta) {
+  Action? actionFor(Player player, Delta delta) {
     final target = player.location.apply(delta);
-    var mob = currentLevelState.mobAt(target);
-    if (mob != null) {
-      return PlayerAttackAction(target: target, player: player);
+    final enemy = currentLevelState.enemyAt(target);
+    if (enemy != null) {
+      return AttackAction(target: target, mob: player);
     }
     if (currentLevelState.canMove(player, delta)) {
-      return PlayerMoveAction(
-          destination: player.location.apply(delta), player: player);
+      return MoveAction(destination: player.location.apply(delta), mob: player);
     }
     return null;
   }
@@ -575,8 +579,8 @@ class GameState {
   }
 
   void nextTurn() {
-    for (var mob in currentLevelState.mobs) {
-      mob.update(this);
+    for (var enemy in currentLevelState.enemies) {
+      enemy.update(this);
     }
     var item = currentLevelState.pickupItem(player.location);
     if (item != null) {
