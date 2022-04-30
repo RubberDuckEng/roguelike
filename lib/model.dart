@@ -356,7 +356,7 @@ class Player {
 
   Player.spawn(this.location) : inventory = [];
 
-  double get lightRadius => 1.0;
+  double get lightRadius => 1.5;
 
   void move(Delta delta) {
     location = location.apply(delta);
