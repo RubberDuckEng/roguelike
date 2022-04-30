@@ -197,16 +197,24 @@ class Level {
     }
   }
 
-  Iterable<Position> nearbyPositions(Position position) sync* {
-    var deltas = const [Delta.up(), Delta.down(), Delta.left(), Delta.right()];
-    for (var delta in deltas) {
-      var neighbor = position.apply(delta);
-      if (grid.get(neighbor) != null) {
-        yield neighbor;
+  Iterable<Position> nearbyPositions(Position position,
+      {double radius = 1.0}) sync* {
+    for (var nearby in allPositions) {
+      var delta = nearby.deltaTo(position);
+      if (delta.magnitude <= radius) {
+        yield nearby;
       }
     }
     // Include self?
     yield position;
+  }
+
+  Iterable<Position> get allPositions sync* {
+    for (int x = 0; x < width; x++) {
+      for (int y = 0; y < height; y++) {
+        yield Position(x, y);
+      }
+    }
   }
 
   bool hasPathBetween(Position start, Position end) {
@@ -338,10 +346,17 @@ class World {
   World(this.size, this.levels);
 }
 
+enum Item {
+  key,
+}
+
 class Player {
   Position location;
+  List<Item> inventory;
 
-  Player.spawn(this.location);
+  Player.spawn(this.location) : inventory = [];
+
+  double get lightRadius => 1.0;
 
   void move(Delta delta) {
     location = location.apply(delta);
@@ -566,7 +581,8 @@ class GameState {
   }
 
   void updateVisibility() {
-    for (var position in currentLevel.nearbyPositions(player.location)) {
+    for (var position in currentLevel.nearbyPositions(player.location,
+        radius: player.lightRadius)) {
       currentLevelState.revealed.set(position, true);
     }
   }
