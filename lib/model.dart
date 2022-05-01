@@ -1,7 +1,5 @@
 import 'dart:math';
 
-import 'package:flutter/material.dart';
-
 import 'geometry.dart';
 import 'sprite.dart';
 
@@ -333,7 +331,7 @@ class Player extends Mob {
     if (currentHealth < 0) {
       // die;
     }
-    currentHealth = min(currentHealth, maxHealth);
+    currentHealth = max(min(currentHealth, maxHealth), 0);
   }
 
   @override
