@@ -54,4 +54,5 @@ class Sprites {
   static const IconSprite alienMonster = IconSprite(IconData(0x1F47E));
   static const IconSprite flutterDash = IconSprite(Icons.flutter_dash);
   static const IconSprite torch = IconSprite(IconData(0x1F4A1));
+  static const IconSprite bug = IconSprite(IconData(0x1F41B));
 }
