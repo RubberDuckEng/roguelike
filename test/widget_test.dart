@@ -78,16 +78,8 @@ void main() {
 
     // FIXME: Where does this belong?
     int passableCellCount(Level level) {
-      int passableCount = 0;
-      for (int x = 0; x < level.width; x++) {
-        for (int y = 0; y < level.height; y++) {
-          var cell = level.getCell(Position(x, y));
-          if (cell.isPassable) {
-            passableCount += 1;
-          }
-        }
-      }
-      return passableCount;
+      return level.allPositions.fold(0,
+          (total, position) => level.isPassable(position) ? total + 1 : total);
     }
 
     expect(passableCellCount(level), 90);
