@@ -93,6 +93,11 @@ class WorldPainter extends CustomPainter {
       var isRevealed = gameState.currentLevelState.isRevealed(position);
       if (!isRevealed) {
         painter.fillCell(position, Colors.black);
+      } else {
+        var isLit = gameState.currentLevelState.isLit(position);
+        if (!isLit) {
+          painter.fillCell(position, Colors.black38);
+        }
       }
     }
   }
@@ -115,7 +120,10 @@ class WorldPainter extends CustomPainter {
     painter.paintSprite(exitSprite, gameState.currentLevel.exit);
     paintItems(painter);
     for (var mob in gameState.currentLevelState.enemies) {
-      paintMob(painter, mob);
+      // Only paint mobs outside the fog of war.
+      if (gameState.currentLevelState.isLit(mob.location)) {
+        paintMob(painter, mob);
+      }
     }
     paintPlayer(painter, gameState.player);
     paintFogOfWar(painter);

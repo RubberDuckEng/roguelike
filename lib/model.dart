@@ -471,13 +471,15 @@ class LevelState {
   final Level level;
   final int levelIndex;
   List<Enemy> enemies;
-  Grid<bool> revealed;
+  Grid<bool> mapped;
+  Grid<bool> lit;
   Grid<Item?> itemGrid;
   bool exitUnlocked;
 
   LevelState.spawn(this.level, this.levelIndex, Random random)
       : enemies = [],
-        revealed = Grid<bool>.filled(level.size, () => false),
+        mapped = Grid<bool>.filled(level.size, () => false),
+        lit = Grid<bool>.filled(level.size, () => false),
         itemGrid = Grid<Item?>.filled(level.size, () => null),
         exitUnlocked = false {
     spawnEnemies(levelIndex, random);
@@ -506,7 +508,8 @@ class LevelState {
     spawnOneItem(Torch(), random, chance: 0.05);
   }
 
-  bool isRevealed(Position position) => revealed.get(position) ?? false;
+  bool isRevealed(Position position) => mapped.get(position) ?? false;
+  bool isLit(Position position) => lit.get(position) ?? false;
 
   Item? pickupItem(Position position) {
     var item = itemGrid.get(position);
@@ -568,7 +571,7 @@ class LevelState {
 
   void revealAll() {
     for (var position in level.allPositions) {
-      revealed.set(position, true);
+      mapped.set(position, true);
     }
   }
 
@@ -662,9 +665,14 @@ class GameState {
   }
 
   void updateVisibility() {
-    for (var position in currentLevel.nearbyPositions(player.location,
-        radius: player.lightRadius)) {
-      currentLevelState.revealed.set(position, true);
+    for (var position in currentLevel.allPositions) {
+      var delta = position.deltaTo(player.location);
+      if (delta.magnitude < player.lightRadius) {
+        currentLevelState.mapped.set(position, true);
+        currentLevelState.lit.set(position, true);
+      } else {
+        currentLevelState.lit.set(position, false);
+      }
     }
   }
 
