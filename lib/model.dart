@@ -322,8 +322,7 @@ class Player extends Mob {
   int get missingHealth => maxHealth - currentHealth;
 
   @override
-  Sprite get sprite =>
-      Sprites.flutterDash.copyWith(color: Colors.blue.shade800);
+  Sprite get sprite => Sprites.bug;
 
   void move(Delta delta) {
     location += delta;

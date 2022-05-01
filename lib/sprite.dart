@@ -53,4 +53,5 @@ class Sprites {
   static const IconSprite sparkleHeart = IconSprite(IconData(0x1F496));
   static const IconSprite alienMonster = IconSprite(IconData(0x1F47E));
   static const IconSprite flutterDash = IconSprite(Icons.flutter_dash);
+  static const IconSprite bug = IconSprite(IconData(0x1F41B));
 }
