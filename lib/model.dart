@@ -298,6 +298,13 @@ class HealAll extends Item {
   }
 }
 
+class Torch extends Item {
+  @override
+  void onPickup(GameState state) {
+    state.player.lightRadius += 1;
+  }
+}
+
 abstract class Mob {
   Position location;
 
@@ -311,13 +318,12 @@ abstract class Mob {
 class Player extends Mob {
   int maxHealth = 10;
   int currentHealth = 10;
+  double lightRadius = 1.5;
   List<Item> inventory;
 
   Player.spawn(Position location)
       : inventory = [],
         super.spawn(location);
-
-  double get lightRadius => 1.5;
 
   int get missingHealth => maxHealth - currentHealth;
 
@@ -488,7 +494,8 @@ class LevelState {
     spawnOneItem(PortalKey(), random);
     spawnOneItem(LevelMap(), random);
     spawnOneItem(HealOne(), random, chance: 0.70);
-    spawnOneItem(HealAll(), random, chance: 0.05);
+    spawnOneItem(HealAll(), random, chance: 0.20);
+    spawnOneItem(Torch(), random, chance: 0.05);
   }
 
   bool isRevealed(Position position) => revealed.get(position) ?? false;

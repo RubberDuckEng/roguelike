@@ -70,6 +70,8 @@ class WorldPainter extends CustomPainter {
             Sprites.heart.paint(canvas, rect);
           } else if (item is HealAll) {
             Sprites.sparkleHeart.paint(canvas, rect);
+          } else if (item is Torch) {
+            Sprites.torch.paint(canvas, rect);
           }
         }
       }
