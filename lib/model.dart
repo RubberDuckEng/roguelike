@@ -360,9 +360,20 @@ class Enemy extends Mob {
     }
   }
 
+  Item? rollForItem(Random random) {
+    double chance = random.nextDouble();
+    if (chance < 0.20) {
+      return HealOne();
+    } else if (chance < 0.30) {
+      return HealAll();
+    }
+    return null;
+  }
+
   @override
   void hit(GameState state) {
-    state.currentLevelState.removeEnemy(this);
+    var item = rollForItem(state.random);
+    state.currentLevelState.removeEnemy(this, droppedItem: item);
   }
 }
 
@@ -570,8 +581,11 @@ class LevelState {
     return targetCell.isPassable;
   }
 
-  void removeEnemy(Enemy enemy) {
+  void removeEnemy(Enemy enemy, {Item? droppedItem}) {
     enemies.remove(enemy);
+    if (droppedItem != null && itemAt(enemy.location) == null) {
+      setItemAt(enemy.location, droppedItem);
+    }
   }
 }
 
