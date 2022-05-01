@@ -53,10 +53,6 @@ class WorldPainter extends CustomPainter {
     painter.fillCell(position, color);
   }
 
-  void paintPlayer(CellPainter painter, Player player) {
-    painter.paintSprite(player.sprite, player.location);
-  }
-
   void paintMob(CellPainter painter, Mob mob) {
     painter.paintSprite(mob.sprite, mob.location);
   }
@@ -130,7 +126,7 @@ class WorldPainter extends CustomPainter {
         paintMob(painter, mob);
       }
     }
-    paintPlayer(painter, gameState.player);
+    paintMob(painter, gameState.player);
     paintFogOfWar(painter);
   }
 
