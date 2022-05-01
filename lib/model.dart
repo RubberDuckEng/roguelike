@@ -266,6 +266,8 @@ class World {
 
 abstract class Item {
   void onPickup(GameState state);
+
+  Sprite get sprite;
 }
 
 class PortalKey extends Item {
@@ -273,6 +275,9 @@ class PortalKey extends Item {
   void onPickup(GameState state) {
     state.currentLevelState.unlockExit();
   }
+
+  @override
+  Sprite get sprite => Sprites.key;
 }
 
 class LevelMap extends Item {
@@ -280,6 +285,9 @@ class LevelMap extends Item {
   void onPickup(GameState state) {
     state.currentLevelState.revealAll();
   }
+
+  @override
+  Sprite get sprite => Sprites.map;
 }
 
 class HealOne extends Item {
@@ -287,6 +295,9 @@ class HealOne extends Item {
   void onPickup(GameState state) {
     state.player.applyHealthChange(1);
   }
+
+  @override
+  Sprite get sprite => Sprites.heart;
 }
 
 class HealAll extends Item {
@@ -294,6 +305,9 @@ class HealAll extends Item {
   void onPickup(GameState state) {
     state.player.applyHealthChange(state.player.maxHealth);
   }
+
+  @override
+  Sprite get sprite => Sprites.sparkleHeart;
 }
 
 class Torch extends Item {
@@ -301,6 +315,9 @@ class Torch extends Item {
   void onPickup(GameState state) {
     state.player.lightRadius += 1;
   }
+
+  @override
+  Sprite get sprite => Sprites.torch;
 }
 
 abstract class Mob {

@@ -16,11 +16,6 @@ class CellPainter {
         cell.width, cell.height);
   }
 
-  Offset offsetForPosition(Position position, Size cellSize) {
-    return Offset((position.x + 0.5) * cellSize.width,
-        (position.y + 0.5) * cellSize.height);
-  }
-
   void fillCell(Position position, Color color) {
     final paint = Paint();
     paint.isAntiAlias = false;
@@ -49,36 +44,15 @@ class WorldPainter extends CustomPainter {
     }
   }
 
-  void paintPortal(CellPainter painter, Position position, Color color) {
-    painter.fillCell(position, color);
-  }
-
   void paintMob(CellPainter painter, Mob mob) {
     painter.paintSprite(mob.sprite, mob.location);
-  }
-
-  // FIXME: Does this belong on Item?
-  Sprite spriteForItem(Item item) {
-    if (item is PortalKey) {
-      return Sprites.key;
-    } else if (item is LevelMap) {
-      return Sprites.map;
-    } else if (item is HealOne) {
-      return Sprites.heart;
-    } else if (item is HealAll) {
-      return Sprites.sparkleHeart;
-    } else if (item is Torch) {
-      return Sprites.torch;
-    }
-    throw ArgumentError.value(item);
   }
 
   void paintItems(CellPainter painter) {
     for (var position in gameState.currentLevel.allPositions) {
       var item = gameState.currentLevelState.itemAt(position);
       if (item != null) {
-        var sprite = spriteForItem(item);
-        painter.paintSprite(sprite, position);
+        painter.paintSprite(item.sprite, position);
       }
     }
   }
