@@ -94,9 +94,14 @@ class WorldPainter extends CustomPainter {
       if (!isRevealed) {
         painter.fillCell(position, Colors.black);
       } else {
-        var isLit = gameState.currentLevelState.isLit(position);
-        if (!isLit) {
-          painter.fillCell(position, Colors.black38);
+        // Don't paint fog over walls to avoid changing their color.
+        var isWall =
+            gameState.currentLevel.getCell(position).type == CellType.wall;
+        if (!isWall) {
+          var isLit = gameState.currentLevelState.isLit(position);
+          if (!isLit) {
+            painter.fillCell(position, Colors.black38);
+          }
         }
       }
     }
