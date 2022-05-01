@@ -5,35 +5,11 @@ import 'model.dart';
 import 'geometry.dart';
 import 'sprite.dart';
 
-class WorldPainter extends CustomPainter {
-  final GameState gameState;
+class CellPainter {
+  final Canvas canvas;
+  final Size cellSize;
 
-  WorldPainter(this.gameState);
-
-  void paintBackground(Canvas canvas, Size cellSize) {
-    final paint = Paint();
-    paint.isAntiAlias = false;
-    paint.style = PaintingStyle.fill;
-    for (int i = 0; i < gameState.world.width; ++i) {
-      for (int j = 0; j < gameState.world.height; ++j) {
-        var cell = gameState.currentLevel.getCell(Position(i, j));
-        if (cell.isPassable) {
-          paint.color = Colors.brown.shade300;
-        } else {
-          paint.color = Colors.blue.shade300;
-        }
-        canvas.drawRect(rectForPosition(Position(i, j), cellSize), paint);
-      }
-    }
-  }
-
-  void paintPortal(
-      Canvas canvas, Position position, Color color, Size cellSize) {
-    final paint = Paint();
-    paint.isAntiAlias = false;
-    paint.color = color;
-    canvas.drawRect(rectForPosition(position, cellSize), paint);
-  }
+  CellPainter(this.canvas, this.cellSize);
 
   Rect rectForPosition(Position position, Size cell) {
     return Rect.fromLTWH(position.x * cell.width, position.y * cell.height,
@@ -45,51 +21,78 @@ class WorldPainter extends CustomPainter {
         (position.y + 0.5) * cellSize.height);
   }
 
-  void paintPlayer(Canvas canvas, Size cellSize, Player player) {
-    player.sprite.paint(canvas, rectForPosition(player.location, cellSize));
-  }
-
-  void paintMob(Canvas canvas, Size cellSize, Mob mob) {
-    mob.sprite.paint(canvas, rectForPosition(mob.location, cellSize));
-  }
-
-  void paintItems(Canvas canvas, Size cellSize) {
+  void fillCell(Position position, Color color) {
     final paint = Paint();
     paint.isAntiAlias = false;
-    paint.style = PaintingStyle.fill;
-    for (int i = 0; i < gameState.world.width; ++i) {
-      for (int j = 0; j < gameState.world.height; ++j) {
-        var item = gameState.currentLevelState.itemAt(Position(i, j));
-        if (item != null) {
-          final rect = rectForPosition(Position(i, j), cellSize);
-          if (item is PortalKey) {
-            Sprites.key.paint(canvas, rect);
-          } else if (item is LevelMap) {
-            Sprites.map.paint(canvas, rect);
-          } else if (item is HealOne) {
-            Sprites.heart.paint(canvas, rect);
-          } else if (item is HealAll) {
-            Sprites.sparkleHeart.paint(canvas, rect);
-          } else if (item is Torch) {
-            Sprites.torch.paint(canvas, rect);
-          }
-        }
+    paint.color = color;
+    canvas.drawRect(rectForPosition(position, cellSize), paint);
+  }
+
+  void paintSprite(Sprite sprite, Position position) {
+    sprite.paint(canvas, rectForPosition(position, cellSize));
+  }
+}
+
+class WorldPainter extends CustomPainter {
+  final GameState gameState;
+
+  WorldPainter(this.gameState);
+
+  void paintBackground(CellPainter painter) {
+    var level = gameState.currentLevel;
+    // allPositions does not guarentee order.
+    for (var position in level.allPositions) {
+      var color = level.isPassable(position)
+          ? Colors.brown.shade300
+          : Colors.brown.shade600;
+      painter.fillCell(position, color);
+    }
+  }
+
+  void paintPortal(CellPainter painter, Position position, Color color) {
+    painter.fillCell(position, color);
+  }
+
+  void paintPlayer(CellPainter painter, Player player) {
+    painter.paintSprite(player.sprite, player.location);
+  }
+
+  void paintMob(CellPainter painter, Mob mob) {
+    painter.paintSprite(mob.sprite, mob.location);
+  }
+
+  // FIXME: Does this belong on Item?
+  Sprite spriteForItem(Item item) {
+    if (item is PortalKey) {
+      return Sprites.key;
+    } else if (item is LevelMap) {
+      return Sprites.map;
+    } else if (item is HealOne) {
+      return Sprites.heart;
+    } else if (item is HealAll) {
+      return Sprites.sparkleHeart;
+    } else if (item is Torch) {
+      return Sprites.torch;
+    }
+    throw ArgumentError.value(item);
+  }
+
+  void paintItems(CellPainter painter) {
+    for (var position in gameState.currentLevel.allPositions) {
+      var item = gameState.currentLevelState.itemAt(position);
+      if (item != null) {
+        var sprite = spriteForItem(item);
+        painter.paintSprite(sprite, position);
       }
     }
   }
 
   // This doesn't actually do fog of war yet, just mapped or not.
-  void paintFogOfWar(Canvas canvas, Size cellSize) {
-    final paint = Paint();
-    paint.isAntiAlias = false;
-    paint.style = PaintingStyle.fill;
-    for (int i = 0; i < gameState.world.width; ++i) {
-      for (int j = 0; j < gameState.world.height; ++j) {
-        var isRevealed = gameState.currentLevelState.isRevealed(Position(i, j));
-        if (!isRevealed) {
-          paint.color = Colors.black;
-          canvas.drawRect(rectForPosition(Position(i, j), cellSize), paint);
-        }
+  void paintFogOfWar(CellPainter painter) {
+    for (var position in gameState.currentLevel.allPositions) {
+      var isRevealed = gameState.currentLevelState.isRevealed(position);
+      if (!isRevealed) {
+        painter.fillCell(position, Colors.black);
       }
     }
   }
@@ -98,20 +101,24 @@ class WorldPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final cellSize = Size(size.width / gameState.world.width,
         size.height / gameState.world.height);
-    paintBackground(canvas, cellSize);
-    paintPortal(
-        canvas, gameState.currentLevel.enter, Colors.green.shade500, cellSize);
-    var exitColor = Colors.purple.shade500;
+    final painter = CellPainter(canvas, cellSize);
+
+    paintBackground(painter);
+    if (gameState.currentLevelNumber != 0) {
+      painter.paintSprite(Sprites.previousLevel, gameState.currentLevel.enter);
+    }
+
+    var exitSprite = Sprites.openExit;
     if (!gameState.currentLevelState.exitUnlocked) {
-      exitColor = Colors.black38;
+      exitSprite = Sprites.closedExit;
     }
-    paintPortal(canvas, gameState.currentLevel.exit, exitColor, cellSize);
-    paintItems(canvas, cellSize);
+    painter.paintSprite(exitSprite, gameState.currentLevel.exit);
+    paintItems(painter);
     for (var mob in gameState.currentLevelState.enemies) {
-      paintMob(canvas, cellSize, mob);
+      paintMob(painter, mob);
     }
-    paintPlayer(canvas, cellSize, gameState.player);
-    paintFogOfWar(canvas, cellSize);
+    paintPlayer(painter, gameState.player);
+    paintFogOfWar(painter);
   }
 
   @override
