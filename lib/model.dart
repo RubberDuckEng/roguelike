@@ -637,6 +637,8 @@ class GameState {
     updateVisibility();
   }
 
+  bool get playerDead => player.currentHealth <= 0;
+
   void initializeMissingLevelStates(Random random) {
     for (int levelIndex = 0; levelIndex < world.levels.length; levelIndex++) {
       if (levelStates.length <= levelIndex) {

@@ -249,7 +249,17 @@ Delta deltaFromKey(RawKeyDownEvent event) {
 
 class _GamePageState extends State<GamePage> {
   final focusNode = FocusNode();
-  GameState gameState = GameState.demo();
+  late GameState gameState;
+
+  @override
+  void initState() {
+    newGame();
+    super.initState();
+  }
+
+  void newGame() {
+    gameState = GameState.demo();
+  }
 
   @override
   Widget build(BuildContext context) {
