@@ -3,8 +3,8 @@ const MANIFEST = 'flutter-app-manifest';
 const TEMP = 'flutter-temp-cache';
 const CACHE_NAME = 'flutter-app-cache';
 const RESOURCES = {
-  "index.html": "b845d2f8b1b235541f5c1bff0a1112de",
-"/": "b845d2f8b1b235541f5c1bff0a1112de",
+  "index.html": "88c22bccaf9d677c239a4a464e70d75f",
+"/": "88c22bccaf9d677c239a4a464e70d75f",
 "manifest.json": "13c27fc5da2c4819baa87bce484d4a11",
 "flutter.js": "3688efe0a39e59781b4f95efbd6b5b62",
 "favicon.png": "5dcef449791fa27946b3d35ad8803796",
@@ -22,7 +22,7 @@ const RESOURCES = {
 "canvaskit/profiling/canvaskit.wasm": "95e736ab31147d1b2c7b25f11d4c32cd",
 "canvaskit/canvaskit.js": "c2b4e5f3d7a3d82aed024e7249a78487",
 "canvaskit/canvaskit.wasm": "4b83d89d9fecbea8ca46f2f760c5a9ba",
-"main.dart.js": "d2a99f095c1bc514edfa88f2e7145ea7"
+"main.dart.js": "17c01d2e869d4894e3bc16b5d5e50081"
 };
 
 // The application shell files that are downloaded before a service worker can
