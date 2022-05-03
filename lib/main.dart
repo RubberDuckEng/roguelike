@@ -84,9 +84,9 @@ class WorldPainter extends CustomPainter {
     final painter = CellPainter(canvas, cellSize);
 
     paintBackground(painter);
-    if (gameState.currentLevelNumber != 0) {
-      painter.paintSprite(Sprites.previousLevel, gameState.currentLevel.enter);
-    }
+    // if (gameState.currentLevelNumber != 0) {
+    //   painter.paintSprite(Sprites.previousLevel, gameState.currentLevel.enter);
+    // }
 
     var exitSprite = Sprites.openExit;
     if (!gameState.currentLevelState.exitUnlocked) {

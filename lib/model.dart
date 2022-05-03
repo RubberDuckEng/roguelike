@@ -703,10 +703,11 @@ class GameState {
     } else if (player.location == currentLevel.exit &&
         currentLevelState.exitUnlocked) {
       spawnInLevel(_currentLevelIndex + 1, NamedLocation.entrance);
-    } else if (player.location == currentLevel.enter &&
-        _currentLevelIndex > 1) {
-      spawnInLevel(_currentLevelIndex - 1, NamedLocation.exit);
     }
+    // else if (player.location == currentLevel.enter &&
+    //     _currentLevelIndex > 1) {
+    //   spawnInLevel(_currentLevelIndex - 1, NamedLocation.exit);
+    // }
     updateVisibility();
   }
 }

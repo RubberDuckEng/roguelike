@@ -21,3 +21,16 @@
 * Traps
 * Mobile controls
 * Controller support
+
+# Bug reports
+(1) "you have to add the die thing"
+(2) attacking while on the entrance portal leading to the previous room is frustrating
+(3) the "hole" to the next level can get lost under the HUD
+
+- Do the bad guys hurt you or not?
+- It's not hitting me (not clear what movement is per turn).
+- "The different levels are not very hard"
+- "We should put more walls or make the map harder to see or make it harder to get to the map or add more bad guys"
+- Unclear what the items do
+- No indication that you take damage.
+- Not clear you should be allowed to go back up.
