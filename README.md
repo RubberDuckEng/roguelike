@@ -22,7 +22,18 @@
 * Mobile controls
 * Controller support
 
-# Bug reports
+## Theme ideas
+
+* Descent into Madness
+* Parallel Universe
+* Build Your Way Out
+* Open World
+* Inconvenient Superpowers
+* Death Is A New Beginning
+* Color Changes Everything
+
+## Bug reports
+
 (1) "you have to add the die thing"
 (3) the "hole" to the next level can get lost under the HUD
 
