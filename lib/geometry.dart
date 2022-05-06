@@ -74,9 +74,9 @@ class Position {
   }
 
   Iterable<Position> positionsInNearbyGrid(int xRadius, int yRadius) sync* {
-    for (int nearbyY = y - yRadius; nearbyY <= yRadius; nearbyY++) {
-      for (int nearbyX = x - xRadius; nearbyX <= xRadius; nearbyX++) {
-        yield Position(nearbyX, nearbyY);
+    for (int dy = -yRadius; dy <= yRadius; dy++) {
+      for (int dx = -xRadius; dx <= xRadius; dx++) {
+        yield Position(x + dx, y + dy);
       }
     }
   }
