@@ -216,9 +216,9 @@ class Chunk {
 
   Chunk(this.cells, this.chunkId, Random random)
       : enemies = [],
-        mapped = Grid<bool>.filled(cells.size, () => false),
-        lit = Grid<bool>.filled(cells.size, () => false),
-        itemGrid = Grid<Item?>.filled(cells.size, () => null) {
+        mapped = Grid<bool>.filled(cells.size, (_) => false),
+        lit = Grid<bool>.filled(cells.size, (_) => false),
+        itemGrid = Grid<Item?>.filled(cells.size, (_) => null) {
     spawnEnemies(2, random);
     spawnItems(random);
   }
@@ -290,14 +290,7 @@ class Chunk {
 
   Iterable<Position> get allPositions =>
       allGridPositions.map((position) => toGlobal(position));
-
-  Iterable<GridPosition> get allGridPositions sync* {
-    for (int x = 0; x < width; x++) {
-      for (int y = 0; y < height; y++) {
-        yield GridPosition(x, y);
-      }
-    }
-  }
+  Iterable<GridPosition> get allGridPositions => cells.allPositions;
 
   bool hasPathBetween(Position start, Position end) {
     if (!isPassable(start)) {
@@ -440,7 +433,7 @@ class World {
   Chunk _generateChunk(ChunkId chunkId) {
     // This Random is wrong, use noise or similar instead.
     final random = Random(chunkId.hashCode ^ seed);
-    final cells = Grid.filled(kChunkSize, () => const Cell.empty());
+    final cells = Grid.filled(kChunkSize, (_) => const Cell.empty());
     return Chunk(cells, chunkId, random);
   }
 }
@@ -452,17 +445,25 @@ class GameState {
   final World world;
   final Random random;
 
-  Chunk get visibleChunk => getChunk(player.location);
-
-  Chunk getChunk(Position position) =>
-      world.get(ChunkId.fromPosition(position));
-
   GameState.demo({
     int? seed,
   })  : world = World(seed: seed),
         random = Random(seed) {
     player = Player.spawn(const Position.zero());
     updateVisibility();
+  }
+
+  Chunk get visibleChunk => getChunk(player.location);
+
+  Chunk getChunk(Position position) =>
+      world.get(ChunkId.fromPosition(position));
+
+  Grid<Chunk> get nearbyChunks {
+    var offset = Delta(visibleChunk.chunkId.x - 1, visibleChunk.chunkId.y - 1);
+    return Grid.filled(
+        const ISize(3, 3),
+        (position) =>
+            world.get(ChunkId(offset.dx + position.x, offset.dy + position.y)));
   }
 
   bool get playerDead => player.currentHealth <= 0;

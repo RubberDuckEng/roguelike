@@ -74,9 +74,7 @@ class WorldPainter extends CustomPainter {
     }
   }
 
-  @override
-  void paint(Canvas canvas, Size size) {
-    final chunk = gameState.visibleChunk;
+  void paintChunk(Canvas canvas, Chunk chunk, Size size) {
     final cellSize = Size(size.width / chunk.width, size.height / chunk.height);
     final painter = CellPainter(canvas, cellSize);
 
@@ -90,6 +88,22 @@ class WorldPainter extends CustomPainter {
     }
     paintMob(chunk, painter, gameState.player);
     paintFogOfWar(chunk, painter);
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    var chunks = gameState.nearbyChunks;
+    final chunkSize =
+        Size(size.width / chunks.width, size.height / chunks.height);
+
+    for (var position in chunks.allPositions) {
+      // Must be a more efficient way than this?
+      canvas.save();
+      canvas.translate(
+          chunkSize.width * position.x, chunkSize.height * position.y);
+      paintChunk(canvas, chunks.get(position)!, chunkSize);
+      canvas.restore();
+    }
   }
 
   @override

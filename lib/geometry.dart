@@ -123,9 +123,11 @@ class Grid<T> {
 
   const Grid(this._cells);
 
-  Grid.filled(ISize size, T Function() create)
+  Grid.filled(ISize size, T Function(GridPosition position) create)
       : _cells = List.generate(
-            size.height, (index) => List.generate(size.width, (_) => create()));
+            size.height,
+            (y) =>
+                List.generate(size.width, (x) => create(GridPosition(x, y))));
 
   ISize get size => ISize(width, height);
   int get width => _cells.first.length;
@@ -151,6 +153,14 @@ class Grid<T> {
       return null;
     }
     return row[position.x];
+  }
+
+  Iterable<GridPosition> get allPositions sync* {
+    for (int x = 0; x < width; x++) {
+      for (int y = 0; y < height; y++) {
+        yield GridPosition(x, y);
+      }
+    }
   }
 
   Iterable<List<T>> get cellsByRow => _cells;
