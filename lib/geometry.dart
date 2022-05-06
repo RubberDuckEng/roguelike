@@ -73,6 +73,14 @@ class Position {
     return x == other.x && y == other.y;
   }
 
+  Iterable<Position> positionsInNearbyGrid(int xRadius, int yRadius) sync* {
+    for (int nearbyY = y - yRadius; nearbyY <= yRadius; nearbyY++) {
+      for (int nearbyX = x - xRadius; nearbyX <= xRadius; nearbyX++) {
+        yield Position(nearbyX, nearbyY);
+      }
+    }
+  }
+
   @override
   int get hashCode {
     return hashValues(x, y);

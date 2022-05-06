@@ -97,7 +97,7 @@ class WorldPainter extends CustomPainter {
         Size(size.width / chunks.width, size.height / chunks.height);
 
     for (var position in chunks.allPositions) {
-      // Must be a more efficient way than this?
+      // FIXME: Must be a more efficient way than this?
       canvas.save();
       canvas.translate(
           chunkSize.width * position.x, chunkSize.height * position.y);

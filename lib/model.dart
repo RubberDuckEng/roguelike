@@ -489,15 +489,17 @@ class GameState {
   }
 
   void updateVisibility() {
-    // FIXME: Needs to allow light to spill between rooms?
-    for (var position in visibleChunk.allPositions) {
+    var radius = player.lightRadius.ceil();
+    for (var position
+        in player.location.positionsInNearbyGrid(radius, radius)) {
       var delta = position.deltaTo(player.location);
-      var gridPosition = visibleChunk.toLocal(position);
+      var chunk = getChunk(position);
+      var gridPosition = chunk.toLocal(position);
       if (delta.magnitude < player.lightRadius) {
-        visibleChunk.mapped.set(gridPosition, true);
-        visibleChunk.lit.set(gridPosition, true);
+        chunk.mapped.set(gridPosition, true);
+        chunk.lit.set(gridPosition, true);
       } else {
-        visibleChunk.lit.set(gridPosition, false);
+        chunk.lit.set(gridPosition, false);
       }
     }
   }
