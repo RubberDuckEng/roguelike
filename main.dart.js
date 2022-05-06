@@ -44867,15 +44867,15 @@ return this.a===b.a&&this.b===b.b},
 AN(a,b){return this.R6(a,b)},
 R6(a,b){var s=this
 return A.G2(function(){var r=a,q=b
-var p=0,o=1,n,m,l,k
+var p=0,o=1,n,m,l,k,j,i,h
 return function $async$AN(c,d){if(c===1){n=d
-p=o}while(true)switch(p){case 0:m=s.b-q,l=s.a-r
+p=o}while(true)switch(p){case 0:m=-q,l=-r,k=s.a,j=s.b
 case 2:if(!(m<=q)){p=4
-break}k=l
-case 5:if(!(k<=r)){p=7
+break}i=j+m,h=l
+case 5:if(!(h<=r)){p=7
 break}p=8
-return new A.hm(k,m)
-case 8:case 6:++k
+return new A.hm(k+h,i)
+case 8:case 6:++h
 p=5
 break
 case 7:case 3:++m
