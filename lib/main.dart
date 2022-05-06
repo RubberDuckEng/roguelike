@@ -34,10 +34,10 @@ class WorldPainter extends CustomPainter {
   WorldPainter(this.gameState);
 
   void paintBackground(CellPainter painter) {
-    var level = gameState.currentLevel;
+    var chunk = gameState.currentChunk;
     // allPositions does not guarentee order.
-    for (var position in level.allPositions) {
-      var color = level.isPassable(position)
+    for (var position in chunk.allPositions) {
+      var color = chunk.isPassable(position)
           ? Colors.brown.shade300
           : Colors.brown.shade600;
       painter.fillCell(position, color);
@@ -49,8 +49,8 @@ class WorldPainter extends CustomPainter {
   }
 
   void paintItems(CellPainter painter) {
-    for (var position in gameState.currentLevel.allPositions) {
-      var item = gameState.currentLevelState.itemAt(position);
+    for (var position in gameState.currentChunk.allPositions) {
+      var item = gameState.currentChunk.itemAt(position);
       if (item != null) {
         painter.paintSprite(item.sprite, position);
       }
@@ -59,16 +59,16 @@ class WorldPainter extends CustomPainter {
 
   // This doesn't actually do fog of war yet, just mapped or not.
   void paintFogOfWar(CellPainter painter) {
-    for (var position in gameState.currentLevel.allPositions) {
-      var isRevealed = gameState.currentLevelState.isRevealed(position);
+    for (var position in gameState.currentChunk.allPositions) {
+      var isRevealed = gameState.currentChunk.isRevealed(position);
       if (!isRevealed) {
         painter.fillCell(position, Colors.black);
       } else {
         // Don't paint fog over walls to avoid changing their color.
         var isWall =
-            gameState.currentLevel.getCell(position).type == CellType.wall;
+            gameState.currentChunk.getCell(position).type == CellType.wall;
         if (!isWall) {
-          var isLit = gameState.currentLevelState.isLit(position);
+          var isLit = gameState.currentChunk.isLit(position);
           if (!isLit) {
             painter.fillCell(position, Colors.black38);
           }
@@ -79,24 +79,15 @@ class WorldPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final cellSize = Size(size.width / gameState.world.width,
-        size.height / gameState.world.height);
+    final cellSize = Size(size.width / gameState.currentChunk.width,
+        size.height / gameState.currentChunk.height);
     final painter = CellPainter(canvas, cellSize);
 
     paintBackground(painter);
-    // if (gameState.currentLevelNumber != 0) {
-    //   painter.paintSprite(Sprites.previousLevel, gameState.currentLevel.enter);
-    // }
-
-    var exitSprite = Sprites.openExit;
-    if (!gameState.currentLevelState.exitUnlocked) {
-      exitSprite = Sprites.closedExit;
-    }
-    painter.paintSprite(exitSprite, gameState.currentLevel.exit);
     paintItems(painter);
-    for (var mob in gameState.currentLevelState.enemies) {
+    for (var mob in gameState.currentChunk.enemies) {
       // Only paint mobs outside the fog of war.
-      if (gameState.currentLevelState.isLit(mob.location)) {
+      if (gameState.currentChunk.isLit(mob.location)) {
         paintMob(painter, mob);
       }
     }
@@ -155,7 +146,7 @@ class LevelIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text("Level: ${gameState.currentLevelNumber}");
+    return Text("Chunk: ${gameState.currentChunk.chunkId}");
   }
 }
 

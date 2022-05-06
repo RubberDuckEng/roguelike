@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui';
 
 import 'geometry.dart';
 import 'sprite.dart';
@@ -10,8 +11,7 @@ enum CellType {
 }
 
 enum NamedLocation {
-  entrance,
-  exit,
+  center,
 }
 
 class Cell {
@@ -35,6 +35,26 @@ class Cell {
   }
 }
 
+class GridPosition {
+  final int x;
+  final int y;
+
+  const GridPosition(this.x, this.y);
+
+  @override
+  bool operator ==(other) {
+    if (other is! GridPosition) {
+      return false;
+    }
+    return x == other.x && y == other.y;
+  }
+
+  @override
+  int get hashCode {
+    return hashValues(x, y);
+  }
+}
+
 class Grid<T> {
   final List<List<T>> _cells;
 
@@ -48,7 +68,7 @@ class Grid<T> {
   int get width => _cells.first.length;
   int get height => _cells.length;
 
-  void set(Position position, T cell) {
+  void set(GridPosition position, T cell) {
     if (position.y < 0 || position.y >= _cells.length) {
       throw ArgumentError.value(position);
     }
@@ -59,7 +79,7 @@ class Grid<T> {
     row[position.x] = cell;
   }
 
-  T? get(Position position) {
+  T? get(GridPosition position) {
     if (position.y < 0 || position.y >= _cells.length) {
       return null;
     }
@@ -68,103 +88,6 @@ class Grid<T> {
       return null;
     }
     return row[position.x];
-  }
-}
-
-class Level {
-  final Grid<Cell> grid;
-  final Position enter;
-  final Position exit;
-
-  // For testing
-  Level(List<List<Cell>> cells, {required this.enter, required this.exit})
-      : grid = Grid(cells);
-
-  Level.empty(ISize size, {required this.enter, required this.exit})
-      : grid = Grid<Cell>.filled(size, () => const Cell.empty());
-
-  ISize get size => grid.size;
-  int get width => grid.width;
-  int get height => grid.height;
-
-  bool isPassable(Position position) => getCell(position).isPassable;
-
-  Cell getCell(Position position) =>
-      grid.get(position) ?? const Cell.outOfBounds();
-  void setCell(Position position, Cell cell) => grid.set(position, cell);
-
-  Iterable<Position> traversableNeighbors(Position position) sync* {
-    var deltas = const [Delta.up(), Delta.down(), Delta.left(), Delta.right()];
-    for (var delta in deltas) {
-      var neighbor = position + delta;
-      if (isPassable(neighbor)) {
-        yield neighbor;
-      }
-    }
-  }
-
-  Iterable<Position> nearbyPositions(Position position,
-      {double radius = 1.0}) sync* {
-    for (var nearby in allPositions) {
-      var delta = nearby.deltaTo(position);
-      if (delta.magnitude <= radius) {
-        yield nearby;
-      }
-    }
-    // Include self?
-    yield position;
-  }
-
-  Iterable<Position> get allPositions sync* {
-    for (int x = 0; x < width; x++) {
-      for (int y = 0; y < height; y++) {
-        yield Position(x, y);
-      }
-    }
-  }
-
-  bool hasPathBetween(Position start, Position end) {
-    if (!isPassable(start)) {
-      return false;
-    }
-    final visited = {};
-    final queue = [];
-    queue.add(start);
-    while (queue.isNotEmpty) {
-      final current = queue.removeLast();
-      if (current == end) {
-        return true;
-      }
-      visited[current] = true;
-      for (var next in traversableNeighbors(current)) {
-        if (visited.containsKey(next)) {
-          continue;
-        }
-        queue.add(next);
-      }
-    }
-    return false;
-  }
-
-  Position positionForNamedLocation(NamedLocation location) {
-    switch (location) {
-      case NamedLocation.entrance:
-        return enter;
-      case NamedLocation.exit:
-        return exit;
-    }
-  }
-
-  @override
-  String toString() {
-    final buffer = StringBuffer();
-    for (var row in grid._cells) {
-      for (var cell in row) {
-        buffer.write(cell.toCharRepresentation());
-      }
-      buffer.write('\n');
-    }
-    return buffer.toString();
   }
 }
 
@@ -187,83 +110,6 @@ Position _getRandomPosition(ISize size, Random random) {
   return Position(width, height);
 }
 
-class MazeLevelGenerator {
-  final ISize size;
-  final Position start;
-  final Position end;
-  final Level level;
-  final Random _random;
-
-  MazeLevelGenerator({
-    required this.size,
-    required this.start,
-    required this.end,
-    Random? random,
-  })  : level = Level.empty(size, enter: start, exit: end),
-        _random = random ?? Random();
-
-  static Iterable<Level> generateLevels(
-    ISize size,
-    Random random, {
-    Position? enter,
-    int count = 1,
-  }) sync* {
-    var start = enter ?? _getRandomPosition(size, random);
-    while (count > 0) {
-      var end = _getRandomPositionWithCondition(
-          size, random, (position) => position != start);
-      var generator = MazeLevelGenerator(
-          size: size, start: start, end: end, random: random);
-      generator.addManyWalls(20);
-      generator.fillUnreachableCells();
-      yield generator.level;
-      count -= 1;
-      start = generator.level.exit;
-    }
-  }
-
-  void addWall() {
-    while (true) {
-      final position = _getRandomPositionWithCondition(
-          size, _random, (position) => level.getCell(position).isPassable);
-      final oldCell = level.getCell(position);
-      level.setCell(position, const Cell.wall());
-      if (level.hasPathBetween(start, end)) {
-        return;
-      }
-      level.setCell(position, oldCell);
-    }
-  }
-
-  void addManyWalls(int numberOfWalls) {
-    for (int i = 0; i < numberOfWalls; ++i) {
-      addWall();
-    }
-  }
-
-  void fillUnreachableCells() {
-    for (var position in level.allPositions) {
-      var cell = level.getCell(position);
-      if (cell.isPassable) {
-        if (!level.hasPathBetween(start, position)) {
-          level.setCell(position, const Cell.wall());
-        }
-      }
-    }
-  }
-}
-
-class World {
-  final ISize size;
-  final List<Level> levels;
-
-  // Avoids refactoring for ISize, could be removed.
-  int get width => size.width;
-  int get height => size.height;
-
-  World(this.size, this.levels);
-}
-
 abstract class Item {
   void onPickup(GameState state);
 
@@ -273,7 +119,7 @@ abstract class Item {
 class PortalKey extends Item {
   @override
   void onPickup(GameState state) {
-    state.currentLevelState.unlockExit();
+    state.currentChunk.unlockExit();
   }
 
   @override
@@ -283,7 +129,7 @@ class PortalKey extends Item {
 class LevelMap extends Item {
   @override
   void onPickup(GameState state) {
-    state.currentLevelState.revealAll();
+    state.currentChunk.revealAll();
   }
 
   @override
@@ -390,7 +236,7 @@ class Enemy extends Mob {
   @override
   void hit(GameState state) {
     var item = rollForItem(state.random);
-    state.currentLevelState.removeEnemy(this, droppedItem: item);
+    state.currentChunk.removeEnemy(this, droppedItem: item);
   }
 }
 
@@ -414,10 +260,10 @@ class Wanderer extends Brain {
   Iterable<Action> possibleActions(GameState state) sync* {
     for (var delta in possibleMoves) {
       var position = mob.location + delta;
-      if (!state.currentLevel.isPassable(position)) {
+      if (!state.currentChunk.isPassable(position)) {
         continue;
       }
-      if (state.currentLevelState.enemyAt(position) != null) {
+      if (state.currentChunk.enemyAt(position) != null) {
         continue;
       }
       if (state.player.location == position) {
@@ -467,6 +313,7 @@ class MoveAction extends Action {
   @override
   void execute(GameState state) {
     mob.location = destination;
+    // state.updateChunk();
   }
 }
 
@@ -484,22 +331,22 @@ class AttackAction extends Action {
   }
 }
 
-class LevelState {
-  final Level level;
-  final int levelIndex;
+class Chunk {
+  final Grid<Cell> cells;
+  final ChunkId chunkId;
   List<Enemy> enemies;
   Grid<bool> mapped;
   Grid<bool> lit;
   Grid<Item?> itemGrid;
   bool exitUnlocked;
 
-  LevelState.spawn(this.level, this.levelIndex, Random random)
+  Chunk(this.cells, this.chunkId, Random random)
       : enemies = [],
-        mapped = Grid<bool>.filled(level.size, () => false),
-        lit = Grid<bool>.filled(level.size, () => false),
-        itemGrid = Grid<Item?>.filled(level.size, () => null),
+        mapped = Grid<bool>.filled(cells.size, () => false),
+        lit = Grid<bool>.filled(cells.size, () => false),
+        itemGrid = Grid<Item?>.filled(cells.size, () => null),
         exitUnlocked = false {
-    spawnEnemies(levelIndex, random);
+    spawnEnemies(2, random);
     spawnItems(random);
   }
 
@@ -525,30 +372,118 @@ class LevelState {
     spawnOneItem(Torch(), random, chance: 0.05);
   }
 
-  bool isRevealed(Position position) => mapped.get(position) ?? false;
-  bool isLit(Position position) => lit.get(position) ?? false;
+  ISize get size => cells.size;
+  int get width => cells.width;
+  int get height => cells.height;
+
+  bool isPassable(Position position) => getCell(position).isPassable;
+
+  GridPosition toLocal(Position position) {
+    return GridPosition(position.x - chunkId.x * kChunkSize.width,
+        position.y - chunkId.y * kChunkSize.height);
+  }
+
+  Position toGlobal(GridPosition position) {
+    return Position(position.x + chunkId.x * kChunkSize.width,
+        position.y + chunkId.y * kChunkSize.height);
+  }
+
+  Cell getCell(Position position) {
+    return cells.get(toLocal(position)) ?? const Cell.outOfBounds();
+  }
+
+  void setCell(Position position, Cell cell) =>
+      cells.set(toLocal(position), cell);
+
+  Iterable<Position> traversableNeighbors(Position position) sync* {
+    var deltas = const [Delta.up(), Delta.down(), Delta.left(), Delta.right()];
+    for (var delta in deltas) {
+      var neighbor = position + delta;
+      if (isPassable(neighbor)) {
+        yield neighbor;
+      }
+    }
+  }
+
+  Iterable<Position> nearbyPositions(Position position,
+      {double radius = 1.0}) sync* {
+    for (var nearby in allPositions) {
+      var delta = nearby.deltaTo(position);
+      if (delta.magnitude <= radius) {
+        yield nearby;
+      }
+    }
+    // Include self?
+    yield position;
+  }
+
+  Iterable<Position> get allPositions {
+    return allGridPositions.map((position) => toGlobal(position));
+  }
+
+  Iterable<GridPosition> get allGridPositions sync* {
+    for (int x = 0; x < width; x++) {
+      for (int y = 0; y < height; y++) {
+        yield GridPosition(x, y);
+      }
+    }
+  }
+
+  bool hasPathBetween(Position start, Position end) {
+    if (!isPassable(start)) {
+      return false;
+    }
+    final visited = {};
+    final queue = [];
+    queue.add(start);
+    while (queue.isNotEmpty) {
+      final current = queue.removeLast();
+      if (current == end) {
+        return true;
+      }
+      visited[current] = true;
+      for (var next in traversableNeighbors(current)) {
+        if (visited.containsKey(next)) {
+          continue;
+        }
+        queue.add(next);
+      }
+    }
+    return false;
+  }
+
+  @override
+  String toString() {
+    final buffer = StringBuffer();
+    for (var row in cells._cells) {
+      for (var cell in row) {
+        buffer.write(cell.toCharRepresentation());
+      }
+      buffer.write('\n');
+    }
+    return buffer.toString();
+  }
+
+  bool isRevealed(Position position) => mapped.get(toLocal(position)) ?? false;
+  bool isLit(Position position) => lit.get(toLocal(position)) ?? false;
 
   Item? pickupItem(Position position) {
-    var item = itemGrid.get(position);
+    var item = itemGrid.get(toLocal(position));
     if (item != null) {
-      itemGrid.set(position, null);
+      itemGrid.set(toLocal(position), null);
     }
     return item;
   }
 
   void setItemAt(Position position, Item item) {
-    itemGrid.set(position, item);
+    itemGrid.set(toLocal(position), item);
   }
 
-  Item? itemAt(Position position) => itemGrid.get(position);
+  Item? itemAt(Position position) => itemGrid.get(toLocal(position));
 
   Position getItemSpawnLocation(Random random) {
-    return _getRandomPositionWithCondition(level.size, random,
-        (Position position) {
-      if (!level.isPassable(position)) {
-        return false;
-      }
-      if (position == level.enter || position == level.exit) {
+    return _getRandomPositionWithCondition(size, random, (Position position) {
+      if (!isPassable(position)) {
         return false;
       }
       return itemAt(position) == null;
@@ -556,12 +491,8 @@ class LevelState {
   }
 
   Position getEnemySpawnLocation(Random random) {
-    return _getRandomPositionWithCondition(level.size, random,
-        (Position position) {
-      if (!level.isPassable(position)) {
-        return false;
-      }
-      if (position == level.enter || position == level.exit) {
+    return _getRandomPositionWithCondition(size, random, (Position position) {
+      if (!isPassable(position)) {
         return false;
       }
       for (var enemy in enemies) {
@@ -587,19 +518,19 @@ class LevelState {
   }
 
   void revealAll() {
-    for (var position in level.allPositions) {
+    for (var position in allGridPositions) {
       mapped.set(position, true);
     }
   }
 
-  bool canMove(Mob mob, Delta delta) {
-    if (delta.isZero) {
-      return false;
-    }
-    var targetPosition = mob.location + delta;
-    var targetCell = level.getCell(targetPosition);
-    return targetCell.isPassable;
-  }
+  // bool canMove(Mob mob, Delta delta) {
+  //   if (delta.isZero) {
+  //     return false;
+  //   }
+  //   var targetPosition = mob.location + delta;
+  //   var targetCell = getCell(targetPosition);
+  //   return targetCell.isPassable;
+  // }
 
   void removeEnemy(Enemy enemy, {Item? droppedItem}) {
     enemies.remove(enemy);
@@ -609,68 +540,83 @@ class LevelState {
   }
 }
 
-class GameState {
-  late World world;
-  late Player player;
-  List<LevelState> levelStates; // Should this be a sparse array or map?
-  int _currentLevelIndex;
-  final Random random;
+class ChunkId {
+  final int x;
+  final int y;
 
-  LevelState get currentLevelState => levelStates[_currentLevelIndex];
-  Level get currentLevel => levelStates[_currentLevelIndex].level;
-  int get currentLevelNumber => _currentLevelIndex;
+  const ChunkId(this.x, this.y);
+  const ChunkId.origin()
+      : x = 0,
+        y = 0;
+
+  ChunkId.fromPosition(Position position)
+      : x = position.x ~/ kChunkSize.width,
+        y = position.y ~/ kChunkSize.height;
+
+  @override
+  String toString() {
+    return '[$x,$y]';
+  }
+
+  @override
+  bool operator ==(other) {
+    if (other is! ChunkId) {
+      return false;
+    }
+    return x == other.x && y == other.y;
+  }
+
+  @override
+  int get hashCode {
+    return hashValues(x, y);
+  }
+}
+
+class World {
+  final int seed;
+  final Map<ChunkId, Chunk> _map = {};
+
+  World({int? seed}) : seed = seed ?? 0;
+
+  Chunk get(ChunkId id) {
+    return _map.putIfAbsent(id, () => _generateChunk(id));
+  }
+
+  Chunk _generateChunk(ChunkId chunkId) {
+    // This Random is wrong, use noise or similar instead.
+    final random = Random(chunkId.hashCode ^ seed);
+    final cells = Grid.filled(kChunkSize, () => const Cell.empty());
+    return Chunk(cells, chunkId, random);
+  }
+}
+
+ISize kChunkSize = const ISize(10, 10);
+
+class GameState {
+  late Player player;
+  final World world;
+  final Random random;
+  Chunk get currentChunk => world.get(ChunkId.fromPosition(player.location));
 
   GameState.demo({
-    ISize size = const ISize(10, 10),
     int? seed,
-  })  : levelStates = [],
-        random = Random(seed),
-        _currentLevelIndex = 0 {
-    world = World(
-        size,
-        MazeLevelGenerator.generateLevels(size, random,
-                enter: _getRandomPosition(size, random))
-            .toList());
-    initializeMissingLevelStates(random);
+  })  : world = World(seed: seed),
+        random = Random(seed) {
     player = Player.spawn(const Position(0, 0));
-    spawnInLevel(0, NamedLocation.entrance);
     updateVisibility();
   }
 
   bool get playerDead => player.currentHealth <= 0;
 
-  void initializeMissingLevelStates(Random random) {
-    for (int levelIndex = 0; levelIndex < world.levels.length; levelIndex++) {
-      if (levelStates.length <= levelIndex) {
-        var level = world.levels[levelIndex];
-        levelStates.add(LevelState.spawn(level, levelIndex, random));
-      }
-    }
-  }
-
-  void spawnInLevel(int index, NamedLocation location) {
-    int missing = index - world.levels.length + 1;
-    if (missing > 0) {
-      var start = world.levels.isNotEmpty ? world.levels.last.exit : null;
-      var newLevels = MazeLevelGenerator.generateLevels(world.size, random,
-              enter: start, count: missing)
-          .toList();
-      world.levels.addAll(newLevels);
-      initializeMissingLevelStates(random);
-    }
-    // Do we need to tell the level the player is leaving?
-    _currentLevelIndex = index;
-    player.location = currentLevel.positionForNamedLocation(location);
-    // Do we need to tell the level the player is returning? (e.g respawn mobs?)
-  }
-
   Action? actionFor(Player player, Delta delta) {
     final target = player.location + delta;
-    final enemy = currentLevelState.enemyAt(target);
+    final enemy = currentChunk.enemyAt(target);
     if (enemy != null) {
       return AttackAction(target: target, mob: player);
     }
-    if (currentLevelState.canMove(player, delta)) {
+    final targetChunkId = ChunkId.fromPosition(target);
+    final targetChunk = world.get(targetChunkId);
+    if (targetChunk.isPassable(target)) {
       return MoveAction(destination: player.location + delta, mob: player);
     }
     return null;
@@ -680,36 +626,31 @@ class GameState {
     if (player.location == position) {
       return player;
     }
-    return currentLevelState.enemyAt(position);
+    return currentChunk.enemyAt(position);
   }
 
   void updateVisibility() {
-    for (var position in currentLevel.allPositions) {
+    for (var position in currentChunk.allPositions) {
       var delta = position.deltaTo(player.location);
+      var gridPosition = currentChunk.toLocal(position);
       if (delta.magnitude < player.lightRadius) {
-        currentLevelState.mapped.set(position, true);
-        currentLevelState.lit.set(position, true);
+        currentChunk.mapped.set(gridPosition, true);
+        currentChunk.lit.set(gridPosition, true);
       } else {
-        currentLevelState.lit.set(position, false);
+        currentChunk.lit.set(gridPosition, false);
       }
     }
   }
 
   void nextTurn() {
-    for (var enemy in currentLevelState.enemies) {
+    for (var enemy in currentChunk.enemies) {
       enemy.update(this);
     }
-    var item = currentLevelState.pickupItem(player.location);
+    var item = currentChunk.pickupItem(player.location);
     if (item != null) {
       item.onPickup(this);
-    } else if (player.location == currentLevel.exit &&
-        currentLevelState.exitUnlocked) {
-      spawnInLevel(_currentLevelIndex + 1, NamedLocation.entrance);
     }
-    // else if (player.location == currentLevel.enter &&
-    //     _currentLevelIndex > 1) {
-    //   spawnInLevel(_currentLevelIndex - 1, NamedLocation.exit);
-    // }
+    // FIXME: Make it possible to walk off the edge.
     updateVisibility();
   }
 }

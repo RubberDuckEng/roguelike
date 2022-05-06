@@ -52,6 +52,10 @@ class Position {
 
   const Position(this.x, this.y);
 
+  const Position.zero()
+      : x = 0,
+        y = 0;
+
   Delta deltaTo(Position other) {
     return Delta(other.x - x, other.y - y);
   }
