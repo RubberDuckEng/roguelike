@@ -11,19 +11,19 @@ class CellPainter {
 
   CellPainter(this.canvas, this.cellSize);
 
-  Rect rectForPosition(Position position, Size cell) {
+  Rect rectForPosition(GridPosition position, Size cell) {
     return Rect.fromLTWH(position.x * cell.width, position.y * cell.height,
         cell.width, cell.height);
   }
 
-  void fillCell(Position position, Color color) {
+  void fillCell(GridPosition position, Color color) {
     final paint = Paint();
     paint.isAntiAlias = false;
     paint.color = color;
     canvas.drawRect(rectForPosition(position, cellSize), paint);
   }
 
-  void paintSprite(Sprite sprite, Position position) {
+  void paintSprite(Sprite sprite, GridPosition position) {
     sprite.paint(canvas, rectForPosition(position, cellSize));
   }
 }
@@ -33,42 +33,39 @@ class WorldPainter extends CustomPainter {
 
   WorldPainter(this.gameState);
 
-  void paintBackground(CellPainter painter) {
-    var chunk = gameState.currentChunk;
+  void paintBackground(Chunk chunk, CellPainter painter) {
     // allPositions does not guarentee order.
-    for (var position in chunk.allPositions) {
-      var color = chunk.isPassable(position)
+    for (var position in chunk.allGridPositions) {
+      var color = chunk.isPassableLocal(position)
           ? Colors.brown.shade300
           : Colors.brown.shade600;
       painter.fillCell(position, color);
     }
   }
 
-  void paintMob(CellPainter painter, Mob mob) {
-    painter.paintSprite(mob.sprite, mob.location);
+  void paintMob(Chunk chunk, CellPainter painter, Mob mob) {
+    painter.paintSprite(mob.sprite, chunk.toLocal(mob.location));
   }
 
-  void paintItems(CellPainter painter) {
-    for (var position in gameState.currentChunk.allPositions) {
-      var item = gameState.currentChunk.itemAt(position);
+  void paintItems(Chunk chunk, CellPainter painter) {
+    for (var position in chunk.allGridPositions) {
+      var item = chunk.itemAtLocal(position);
       if (item != null) {
         painter.paintSprite(item.sprite, position);
       }
     }
   }
 
-  // This doesn't actually do fog of war yet, just mapped or not.
-  void paintFogOfWar(CellPainter painter) {
-    for (var position in gameState.currentChunk.allPositions) {
-      var isRevealed = gameState.currentChunk.isRevealed(position);
+  void paintFogOfWar(Chunk chunk, CellPainter painter) {
+    for (var position in chunk.allGridPositions) {
+      var isRevealed = chunk.isRevealedLocal(position);
       if (!isRevealed) {
         painter.fillCell(position, Colors.black);
       } else {
         // Don't paint fog over walls to avoid changing their color.
-        var isWall =
-            gameState.currentChunk.getCell(position).type == CellType.wall;
+        var isWall = chunk.getCellLocal(position).type == CellType.wall;
         if (!isWall) {
-          var isLit = gameState.currentChunk.isLit(position);
+          var isLit = chunk.isLitLocal(position);
           if (!isLit) {
             painter.fillCell(position, Colors.black38);
           }
@@ -79,20 +76,20 @@ class WorldPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final cellSize = Size(size.width / gameState.currentChunk.width,
-        size.height / gameState.currentChunk.height);
+    final chunk = gameState.visibleChunk;
+    final cellSize = Size(size.width / chunk.width, size.height / chunk.height);
     final painter = CellPainter(canvas, cellSize);
 
-    paintBackground(painter);
-    paintItems(painter);
-    for (var mob in gameState.currentChunk.enemies) {
+    paintBackground(chunk, painter);
+    paintItems(chunk, painter);
+    for (var mob in chunk.enemies) {
       // Only paint mobs outside the fog of war.
-      if (gameState.currentChunk.isLit(mob.location)) {
-        paintMob(painter, mob);
+      if (chunk.isLit(mob.location)) {
+        paintMob(chunk, painter, mob);
       }
     }
-    paintMob(painter, gameState.player);
-    paintFogOfWar(painter);
+    paintMob(chunk, painter, gameState.player);
+    paintFogOfWar(chunk, painter);
   }
 
   @override
@@ -146,7 +143,7 @@ class LevelIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text("Chunk: ${gameState.currentChunk.chunkId}");
+    return Text("Chunk: ${gameState.visibleChunk.chunkId}");
   }
 }
 

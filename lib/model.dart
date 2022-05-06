@@ -91,8 +91,8 @@ class Grid<T> {
   }
 }
 
-Position _getRandomPositionWithCondition(
-    ISize size, Random random, bool Function(Position position) allowed) {
+GridPosition _getRandomGridPositionWithCondition(
+    ISize size, Random random, bool Function(GridPosition position) allowed) {
   // FIXME: Track seen positions and avoid repeats / terminate if tried all?
   while (true) {
     final position = _getRandomPosition(size, random);
@@ -102,12 +102,12 @@ Position _getRandomPositionWithCondition(
   }
 }
 
-Position _getRandomPosition(ISize size, Random random) {
+GridPosition _getRandomPosition(ISize size, Random random) {
   var area = size.width * size.height;
   var offset = random.nextInt(area);
   var width = (offset / size.width).truncate();
   var height = offset % size.height;
-  return Position(width, height);
+  return GridPosition(width, height);
 }
 
 abstract class Item {
@@ -119,7 +119,7 @@ abstract class Item {
 class PortalKey extends Item {
   @override
   void onPickup(GameState state) {
-    state.currentChunk.unlockExit();
+    state.visibleChunk.unlockExit();
   }
 
   @override
@@ -129,7 +129,7 @@ class PortalKey extends Item {
 class LevelMap extends Item {
   @override
   void onPickup(GameState state) {
-    state.currentChunk.revealAll();
+    state.visibleChunk.revealAll();
   }
 
   @override
@@ -236,7 +236,7 @@ class Enemy extends Mob {
   @override
   void hit(GameState state) {
     var item = rollForItem(state.random);
-    state.currentChunk.removeEnemy(this, droppedItem: item);
+    state.getChunk(location).removeEnemy(this, droppedItem: item);
   }
 }
 
@@ -260,10 +260,10 @@ class Wanderer extends Brain {
   Iterable<Action> possibleActions(GameState state) sync* {
     for (var delta in possibleMoves) {
       var position = mob.location + delta;
-      if (!state.currentChunk.isPassable(position)) {
+      if (!state.getChunk(position).isPassable(position)) {
         continue;
       }
-      if (state.currentChunk.enemyAt(position) != null) {
+      if (state.getChunk(position).enemyAt(position) != null) {
         continue;
       }
       if (state.player.location == position) {
@@ -376,6 +376,8 @@ class Chunk {
   int get width => cells.width;
   int get height => cells.height;
 
+  bool isPassableLocal(GridPosition position) =>
+      getCellLocal(position).isPassable;
   bool isPassable(Position position) => getCell(position).isPassable;
 
   GridPosition toLocal(Position position) {
@@ -388,9 +390,11 @@ class Chunk {
         position.y + chunkId.y * kChunkSize.height);
   }
 
-  Cell getCell(Position position) {
-    return cells.get(toLocal(position)) ?? const Cell.outOfBounds();
+  Cell getCellLocal(GridPosition position) {
+    return cells.get(position) ?? const Cell.outOfBounds();
   }
+
+  Cell getCell(Position position) => getCellLocal(toLocal(position));
 
   void setCell(Position position, Cell cell) =>
       cells.set(toLocal(position), cell);
@@ -464,7 +468,9 @@ class Chunk {
     return buffer.toString();
   }
 
+  bool isRevealedLocal(GridPosition position) => mapped.get(position) ?? false;
   bool isRevealed(Position position) => mapped.get(toLocal(position)) ?? false;
+  bool isLitLocal(GridPosition position) => lit.get(position) ?? false;
   bool isLit(Position position) => lit.get(toLocal(position)) ?? false;
 
   Item? pickupItem(Position position) {
@@ -479,29 +485,32 @@ class Chunk {
     itemGrid.set(toLocal(position), item);
   }
 
+  Item? itemAtLocal(GridPosition position) => itemGrid.get(position);
   Item? itemAt(Position position) => itemGrid.get(toLocal(position));
 
   Position getItemSpawnLocation(Random random) {
-    return _getRandomPositionWithCondition(size, random, (Position position) {
-      if (!isPassable(position)) {
+    return toGlobal(_getRandomGridPositionWithCondition(size, random,
+        (GridPosition position) {
+      if (!isPassableLocal(position)) {
         return false;
       }
-      return itemAt(position) == null;
-    });
+      return itemAtLocal(position) == null;
+    }));
   }
 
   Position getEnemySpawnLocation(Random random) {
-    return _getRandomPositionWithCondition(size, random, (Position position) {
-      if (!isPassable(position)) {
+    return toGlobal(_getRandomGridPositionWithCondition(size, random,
+        (GridPosition position) {
+      if (!isPassableLocal(position)) {
         return false;
       }
       for (var enemy in enemies) {
-        if (enemy.location == position) {
+        if (enemy.location == toGlobal(position)) {
           return false;
         }
       }
       return true;
-    });
+    }));
   }
 
   Enemy? enemyAt(Position position) {
@@ -523,15 +532,6 @@ class Chunk {
     }
   }
 
-  // bool canMove(Mob mob, Delta delta) {
-  //   if (delta.isZero) {
-  //     return false;
-  //   }
-  //   var targetPosition = mob.location + delta;
-  //   var targetCell = getCell(targetPosition);
-  //   return targetCell.isPassable;
-  // }
-
   void removeEnemy(Enemy enemy, {Item? droppedItem}) {
     enemies.remove(enemy);
     if (droppedItem != null && itemAt(enemy.location) == null) {
@@ -550,13 +550,11 @@ class ChunkId {
         y = 0;
 
   ChunkId.fromPosition(Position position)
-      : x = position.x ~/ kChunkSize.width,
-        y = position.y ~/ kChunkSize.height;
+      : x = (position.x / kChunkSize.width).floor(),
+        y = (position.y / kChunkSize.height).floor();
 
   @override
-  String toString() {
-    return '[$x,$y]';
-  }
+  String toString() => '[$x,$y]';
 
   @override
   bool operator ==(other) {
@@ -596,7 +594,10 @@ class GameState {
   late Player player;
   final World world;
   final Random random;
-  Chunk get currentChunk => world.get(ChunkId.fromPosition(player.location));
+  Chunk get visibleChunk => getChunk(player.location);
+
+  Chunk getChunk(Position position) =>
+      world.get(ChunkId.fromPosition(position));
 
   GameState.demo({
     int? seed,
@@ -610,12 +611,11 @@ class GameState {
 
   Action? actionFor(Player player, Delta delta) {
     final target = player.location + delta;
-    final enemy = currentChunk.enemyAt(target);
+    final targetChunk = world.get(ChunkId.fromPosition(target));
+    final enemy = targetChunk.enemyAt(target);
     if (enemy != null) {
       return AttackAction(target: target, mob: player);
     }
-    final targetChunkId = ChunkId.fromPosition(target);
-    final targetChunk = world.get(targetChunkId);
     if (targetChunk.isPassable(target)) {
       return MoveAction(destination: player.location + delta, mob: player);
     }
@@ -626,31 +626,31 @@ class GameState {
     if (player.location == position) {
       return player;
     }
-    return currentChunk.enemyAt(position);
+    return getChunk(position).enemyAt(position);
   }
 
   void updateVisibility() {
-    for (var position in currentChunk.allPositions) {
+    // FIXME: Use gridPositions only.
+    for (var position in visibleChunk.allPositions) {
       var delta = position.deltaTo(player.location);
-      var gridPosition = currentChunk.toLocal(position);
+      var gridPosition = visibleChunk.toLocal(position);
       if (delta.magnitude < player.lightRadius) {
-        currentChunk.mapped.set(gridPosition, true);
-        currentChunk.lit.set(gridPosition, true);
+        visibleChunk.mapped.set(gridPosition, true);
+        visibleChunk.lit.set(gridPosition, true);
       } else {
-        currentChunk.lit.set(gridPosition, false);
+        visibleChunk.lit.set(gridPosition, false);
       }
     }
   }
 
   void nextTurn() {
-    for (var enemy in currentChunk.enemies) {
+    for (var enemy in visibleChunk.enemies) {
       enemy.update(this);
     }
-    var item = currentChunk.pickupItem(player.location);
+    var item = visibleChunk.pickupItem(player.location);
     if (item != null) {
       item.onPickup(this);
     }
-    // FIXME: Make it possible to walk off the edge.
     updateVisibility();
   }
 }
