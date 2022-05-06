@@ -116,16 +116,6 @@ abstract class Item {
   Sprite get sprite;
 }
 
-class PortalKey extends Item {
-  @override
-  void onPickup(GameState state) {
-    state.visibleChunk.unlockExit();
-  }
-
-  @override
-  Sprite get sprite => Sprites.key;
-}
-
 class LevelMap extends Item {
   @override
   void onPickup(GameState state) {
@@ -332,20 +322,18 @@ class AttackAction extends Action {
 }
 
 class Chunk {
-  final Grid<Cell> cells;
   final ChunkId chunkId;
   List<Enemy> enemies;
-  Grid<bool> mapped;
-  Grid<bool> lit;
-  Grid<Item?> itemGrid;
-  bool exitUnlocked;
+  final Grid<Cell> cells;
+  final Grid<bool> mapped;
+  final Grid<bool> lit;
+  final Grid<Item?> itemGrid;
 
   Chunk(this.cells, this.chunkId, Random random)
       : enemies = [],
         mapped = Grid<bool>.filled(cells.size, () => false),
         lit = Grid<bool>.filled(cells.size, () => false),
-        itemGrid = Grid<Item?>.filled(cells.size, () => null),
-        exitUnlocked = false {
+        itemGrid = Grid<Item?>.filled(cells.size, () => null) {
     spawnEnemies(2, random);
     spawnItems(random);
   }
@@ -365,7 +353,6 @@ class Chunk {
   }
 
   void spawnItems(Random random) {
-    spawnOneItem(PortalKey(), random);
     spawnOneItem(LevelMap(), random);
     spawnOneItem(HealOne(), random, chance: 0.70);
     spawnOneItem(HealAll(), random, chance: 0.20);
@@ -522,10 +509,6 @@ class Chunk {
     return null;
   }
 
-  void unlockExit() {
-    exitUnlocked = true;
-  }
-
   void revealAll() {
     for (var position in allGridPositions) {
       mapped.set(position, true);
@@ -630,7 +613,7 @@ class GameState {
   }
 
   void updateVisibility() {
-    // FIXME: Use gridPositions only.
+    // FIXME: Needs to allow light to spill between rooms?
     for (var position in visibleChunk.allPositions) {
       var delta = position.deltaTo(player.location);
       var gridPosition = visibleChunk.toLocal(position);
