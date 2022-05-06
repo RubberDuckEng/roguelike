@@ -1,17 +1,13 @@
 import 'dart:math';
-import 'dart:ui';
 
 import 'geometry.dart';
 import 'sprite.dart';
+import 'items.dart';
 
 enum CellType {
   empty,
   wall,
   outOfBounds,
-}
-
-enum NamedLocation {
-  center,
 }
 
 class Cell {
@@ -50,15 +46,13 @@ class GridPosition {
   }
 
   @override
-  int get hashCode {
-    return hashValues(x, y);
-  }
+  int get hashCode => Object.hash(x, y);
 }
 
 class Grid<T> {
   final List<List<T>> _cells;
 
-  Grid(this._cells);
+  const Grid(this._cells);
 
   Grid.filled(ISize size, T Function() create)
       : _cells = List.generate(
@@ -110,52 +104,6 @@ GridPosition _getRandomPosition(ISize size, Random random) {
   return GridPosition(width, height);
 }
 
-abstract class Item {
-  void onPickup(GameState state);
-
-  Sprite get sprite;
-}
-
-class LevelMap extends Item {
-  @override
-  void onPickup(GameState state) {
-    state.visibleChunk.revealAll();
-  }
-
-  @override
-  Sprite get sprite => Sprites.map;
-}
-
-class HealOne extends Item {
-  @override
-  void onPickup(GameState state) {
-    state.player.applyHealthChange(1);
-  }
-
-  @override
-  Sprite get sprite => Sprites.heart;
-}
-
-class HealAll extends Item {
-  @override
-  void onPickup(GameState state) {
-    state.player.applyHealthChange(state.player.maxHealth);
-  }
-
-  @override
-  Sprite get sprite => Sprites.sparkleHeart;
-}
-
-class Torch extends Item {
-  @override
-  void onPickup(GameState state) {
-    state.player.lightRadius += 1;
-  }
-
-  @override
-  Sprite get sprite => Sprites.torch;
-}
-
 abstract class Mob {
   Position location;
 
@@ -170,11 +118,8 @@ class Player extends Mob {
   int maxHealth = 10;
   int currentHealth = 10;
   double lightRadius = 1.5;
-  List<Item> inventory;
 
-  Player.spawn(Position location)
-      : inventory = [],
-        super.spawn(location);
+  Player.spawn(Position location) : super.spawn(location);
 
   int get missingHealth => maxHealth - currentHealth;
 
@@ -235,11 +180,11 @@ abstract class Brain {
 }
 
 class Wanderer extends Brain {
-  List<Delta> possibleMoves = [
-    const Delta.up(),
-    const Delta.down(),
-    const Delta.left(),
-    const Delta.right(),
+  static const List<Delta> possibleMoves = [
+    Delta.up(),
+    Delta.down(),
+    Delta.left(),
+    Delta.right(),
   ];
 
   final Mob mob;
@@ -287,7 +232,7 @@ class Wanderer extends Brain {
 abstract class Action {
   final Mob mob;
 
-  Action({required this.mob});
+  const Action({required this.mob});
 
   void execute(GameState state);
 }
@@ -295,10 +240,7 @@ abstract class Action {
 class MoveAction extends Action {
   final Position destination;
 
-  MoveAction({
-    required this.destination,
-    required super.mob,
-  });
+  const MoveAction({required this.destination, required super.mob});
 
   @override
   void execute(GameState state) {
@@ -310,10 +252,7 @@ class MoveAction extends Action {
 class AttackAction extends Action {
   final Position target;
 
-  AttackAction({
-    required this.target,
-    required super.mob,
-  });
+  const AttackAction({required this.target, required super.mob});
 
   @override
   void execute(GameState state) {
@@ -323,7 +262,7 @@ class AttackAction extends Action {
 
 class Chunk {
   final ChunkId chunkId;
-  List<Enemy> enemies;
+  final List<Enemy> enemies;
   final Grid<Cell> cells;
   final Grid<bool> mapped;
   final Grid<bool> lit;
@@ -365,7 +304,7 @@ class Chunk {
 
   bool isPassableLocal(GridPosition position) =>
       getCellLocal(position).isPassable;
-  bool isPassable(Position position) => getCell(position).isPassable;
+  bool isPassable(Position position) => isPassableLocal(toLocal(position));
 
   GridPosition toLocal(Position position) {
     return GridPosition(position.x - chunkId.x * kChunkSize.width,
@@ -377,14 +316,9 @@ class Chunk {
         position.y + chunkId.y * kChunkSize.height);
   }
 
-  Cell getCellLocal(GridPosition position) {
-    return cells.get(position) ?? const Cell.outOfBounds();
-  }
-
+  Cell getCellLocal(GridPosition position) =>
+      cells.get(position) ?? const Cell.outOfBounds();
   Cell getCell(Position position) => getCellLocal(toLocal(position));
-
-  void setCell(Position position, Cell cell) =>
-      cells.set(toLocal(position), cell);
 
   Iterable<Position> traversableNeighbors(Position position) sync* {
     var deltas = const [Delta.up(), Delta.down(), Delta.left(), Delta.right()];
@@ -408,9 +342,8 @@ class Chunk {
     yield position;
   }
 
-  Iterable<Position> get allPositions {
-    return allGridPositions.map((position) => toGlobal(position));
-  }
+  Iterable<Position> get allPositions =>
+      allGridPositions.map((position) => toGlobal(position));
 
   Iterable<GridPosition> get allGridPositions sync* {
     for (int x = 0; x < width; x++) {
@@ -468,9 +401,8 @@ class Chunk {
     return item;
   }
 
-  void setItemAt(Position position, Item item) {
-    itemGrid.set(toLocal(position), item);
-  }
+  void setItemAt(Position position, Item item) =>
+      itemGrid.set(toLocal(position), item);
 
   Item? itemAtLocal(GridPosition position) => itemGrid.get(position);
   Item? itemAt(Position position) => itemGrid.get(toLocal(position));
@@ -548,9 +480,7 @@ class ChunkId {
   }
 
   @override
-  int get hashCode {
-    return hashValues(x, y);
-  }
+  int get hashCode => Object.hash(x, y);
 }
 
 class World {
@@ -559,9 +489,7 @@ class World {
 
   World({int? seed}) : seed = seed ?? 0;
 
-  Chunk get(ChunkId id) {
-    return _map.putIfAbsent(id, () => _generateChunk(id));
-  }
+  Chunk get(ChunkId id) => _map.putIfAbsent(id, () => _generateChunk(id));
 
   Chunk _generateChunk(ChunkId chunkId) {
     // This Random is wrong, use noise or similar instead.
@@ -571,12 +499,13 @@ class World {
   }
 }
 
-ISize kChunkSize = const ISize(10, 10);
+const ISize kChunkSize = ISize(10, 10);
 
 class GameState {
   late Player player;
   final World world;
   final Random random;
+
   Chunk get visibleChunk => getChunk(player.location);
 
   Chunk getChunk(Position position) =>
@@ -586,7 +515,7 @@ class GameState {
     int? seed,
   })  : world = World(seed: seed),
         random = Random(seed) {
-    player = Player.spawn(const Position(0, 0));
+    player = Player.spawn(const Position.zero());
     updateVisibility();
   }
 
