@@ -63,8 +63,8 @@ abstract class Mob {
 
   Drawable get drawable;
 
-  Drawing get drawing =>
-      Drawing(drawable: drawable, position: VisualPosition.from(location));
+  DrawingElement get drawing => DrawingElement(
+      drawable: drawable, position: VisualPosition.from(location));
 
   void hit(GameState state) {}
 }

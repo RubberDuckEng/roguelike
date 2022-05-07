@@ -56,13 +56,13 @@ abstract class Drawable {
   void paint(Canvas canvas, Rect rect);
 }
 
-class Drawing {
+class DrawingElement {
   final Drawable drawable;
   final VisualPosition position;
   final double? rotation;
   final double? opacity;
 
-  Drawing({
+  DrawingElement({
     required this.drawable,
     required this.position,
     this.rotation,
@@ -73,13 +73,52 @@ class Drawing {
     drawable.paint(canvas, offset & cellSize);
   }
 
-  Drawing operator *(double operand) {
-    return Drawing(
+  DrawingElement operator *(double operand) {
+    return DrawingElement(
       drawable: drawable,
       position: position,
       rotation: rotation,
       opacity: (opacity ?? 1.0) * operand,
     );
+  }
+
+  static DrawingElement? lerp(DrawingElement? a, DrawingElement? b, double t) {
+    if (b == null) {
+      if (a == null) {
+        return null;
+      } else {
+        return a * (1.0 - t);
+      }
+    } else {
+      if (a == null) {
+        return b * t;
+      } else {
+        return DrawingElement(
+          drawable: a.drawable, // TODO: Crossfade drawables.
+          position: VisualPosition.lerp(a.position, b.position, t)!,
+          rotation:
+              lerpDouble(a.rotation, b.rotation, t), // TODO: Needs quaterions.
+          opacity: lerpDouble(a.opacity, b.opacity, t),
+        );
+      }
+    }
+  }
+}
+
+class Drawing {
+  final Map<Object, DrawingElement> elements;
+
+  Drawing() : elements = {};
+
+  Drawing._(this.elements);
+
+  void add(Object key, DrawingElement element) {
+    elements[key] = element;
+  }
+
+  Drawing operator *(double operand) {
+    return Drawing._(
+        elements.map((key, value) => MapEntry(key, value * operand)));
   }
 
   static Drawing? lerp(Drawing? a, Drawing? b, double t) {
@@ -93,63 +132,24 @@ class Drawing {
       if (a == null) {
         return b * t;
       } else {
-        return Drawing(
-          drawable: a.drawable, // TODO: Crossfade drawables.
-          position: VisualPosition.lerp(a.position, b.position, t)!,
-          rotation:
-              lerpDouble(a.rotation, b.rotation, t), // TODO: Needs quaterions.
-          opacity: lerpDouble(a.opacity, b.opacity, t),
-        );
-      }
-    }
-  }
-}
-
-class DrawingFrame {
-  final Map<Object, Drawing> _drawings;
-
-  DrawingFrame() : _drawings = {};
-
-  DrawingFrame._(this._drawings);
-
-  void add(Object key, Drawing drawing) {
-    _drawings[key] = drawing;
-  }
-
-  DrawingFrame operator *(double operand) {
-    return DrawingFrame._(
-        _drawings.map((key, value) => MapEntry(key, value * operand)));
-  }
-
-  static DrawingFrame? lerp(DrawingFrame? a, DrawingFrame? b, double t) {
-    if (b == null) {
-      if (a == null) {
-        return null;
-      } else {
-        return a * (1.0 - t);
-      }
-    } else {
-      if (a == null) {
-        return b * t;
-      } else {
-        final keys = Set.from(a._drawings.keys.followedBy(b._drawings.keys));
-        final Map<Object, Drawing> drawings = {};
+        final keys = Set.from(a.elements.keys.followedBy(b.elements.keys));
+        final Map<Object, DrawingElement> elements = {};
         for (var key in keys) {
-          Drawing? drawing =
-              Drawing.lerp(a._drawings[key], b._drawings[key], t);
-          if (drawing != null) {
-            drawings[key] = drawing;
+          DrawingElement? element =
+              DrawingElement.lerp(a.elements[key], b.elements[key], t);
+          if (element != null) {
+            elements[key] = element;
           }
         }
-        return DrawingFrame._(drawings);
+        return Drawing._(elements);
       }
     }
   }
 }
 
-class DrawingFrameTween extends Tween<DrawingFrame?> {
+class DrawingFrameTween extends Tween<Drawing?> {
   DrawingFrameTween({super.begin, super.end});
 
   @override
-  DrawingFrame? lerp(double t) => DrawingFrame.lerp(begin, end, t);
+  Drawing? lerp(double t) => Drawing.lerp(begin, end, t);
 }
