@@ -1,7 +1,9 @@
 import 'dart:math';
 
-import 'package:roguelike/main.dart';
+// TODO: Importing main here isn't correct.
+import 'main.dart';
 
+import 'drawable.dart';
 import 'geometry.dart';
 import 'sprite.dart';
 import 'items.dart';
@@ -62,7 +64,10 @@ abstract class Mob {
       : lastMoveDirection = Direction.up,
         carryingBlock = false;
 
-  Sprite get sprite;
+  Drawable get drawable;
+
+  Drawing get drawing =>
+      Drawing(drawable: drawable, position: VisualPosition.from(location));
 
   void hit(GameState state) {}
 }
@@ -77,7 +82,7 @@ class Player extends Mob {
   int get missingHealth => maxHealth - currentHealth;
 
   @override
-  Sprite get sprite => Sprites.ladyBug;
+  Drawable get drawable => Sprites.ladyBug;
 
   void move(Delta delta) {
     location += delta;
@@ -101,7 +106,7 @@ class Enemy extends Mob {
   Brain? brain;
 
   @override
-  Sprite get sprite => Sprites.alienMonster;
+  Drawable get drawable => Sprites.alienMonster;
 
   Enemy.spawn(Position location) : super.spawn(location);
 

@@ -1,10 +1,11 @@
-import 'sprite.dart';
+import 'drawable.dart';
 import 'model.dart';
+import 'sprite.dart';
 
 abstract class Item {
   void onPickup(GameState state);
 
-  Sprite get sprite;
+  Drawable get drawable;
 }
 
 class AreaReveal extends Item {
@@ -14,7 +15,7 @@ class AreaReveal extends Item {
   }
 
   @override
-  Sprite get sprite => Sprites.firework;
+  Drawable get drawable => Sprites.firework;
 }
 
 class HealOne extends Item {
@@ -24,7 +25,7 @@ class HealOne extends Item {
   }
 
   @override
-  Sprite get sprite => Sprites.heart;
+  Drawable get drawable => Sprites.heart;
 }
 
 class HealAll extends Item {
@@ -34,7 +35,7 @@ class HealAll extends Item {
   }
 
   @override
-  Sprite get sprite => Sprites.sparkleHeart;
+  Drawable get drawable => Sprites.sparkleHeart;
 }
 
 class Torch extends Item {
@@ -44,5 +45,5 @@ class Torch extends Item {
   }
 
   @override
-  Sprite get sprite => Sprites.torch;
+  Drawable get drawable => Sprites.torch;
 }

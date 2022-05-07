@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'model.dart';
 import 'geometry.dart';
-import 'sprite.dart';
+import 'drawable.dart';
 
 class CellPainter {
   final Canvas canvas;
@@ -43,7 +43,7 @@ class CellPainter {
     canvas.drawRect(rectForPosition(position), paint);
   }
 
-  void paintSprite(Sprite sprite, GridPosition position) {
+  void paintDrawable(Drawable sprite, GridPosition position) {
     sprite.paint(canvas, rectForPosition(position));
   }
 }
@@ -69,14 +69,14 @@ class ChunkPainter {
       painter.paintCarriedBlock(chunk.toLocal(mob.location),
           Colors.brown.shade600, mob.lastMoveDirection);
     }
-    painter.paintSprite(mob.sprite, chunk.toLocal(mob.location));
+    painter.paintDrawable(mob.drawable, chunk.toLocal(mob.location));
   }
 
   void paintItems() {
     for (var position in chunk.allGridPositions) {
       var item = chunk.itemAtLocal(position);
       if (item != null) {
-        painter.paintSprite(item.sprite, position);
+        painter.paintDrawable(item.drawable, position);
       }
     }
   }
