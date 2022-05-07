@@ -4,6 +4,10 @@ import 'package:flutter/material.dart';
 
 import 'geometry.dart';
 
+double _lerpDouble(double a, double b, double t) {
+  return a * (1.0 - t) + b * t;
+}
+
 class VisualPosition {
   final double x;
   final double y;
@@ -40,7 +44,7 @@ class VisualPosition {
         return b * t;
       } else {
         return VisualPosition(
-            lerpDouble(a.x, b.x, t)!, lerpDouble(a.y, b.y, t)!);
+            _lerpDouble(a.x, b.x, t), _lerpDouble(a.y, b.y, t));
       }
     }
   }
@@ -58,11 +62,12 @@ class Drawing {
   final double? rotation;
   final double? opacity;
 
-  Drawing(
-      {required this.drawable,
-      required this.position,
-      this.rotation,
-      this.opacity});
+  Drawing({
+    required this.drawable,
+    required this.position,
+    this.rotation,
+    this.opacity,
+  });
 
   void paint(Canvas canvas, Offset offset, Size cellSize) {
     drawable.paint(canvas, offset & cellSize);
