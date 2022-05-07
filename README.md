@@ -67,3 +67,16 @@
 * Move to using a triangle for PC
 * Move to using Key up/key down instead of key-press.
 * Draw highlight on the square you'll snap
+
+Things to do
+* Change enemies to spawn based on proximity.
+* Change enemies to be active while in lit.
+* Time of day?
+
+## Animation notes
+* Screen transitions
+* Attack animations
+* Bumping into wall animations
+* Sprite walking?
+* Moving between
+* Flicker animations?

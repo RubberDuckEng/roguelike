@@ -219,8 +219,21 @@ class Chunk {
         mapped = Grid<bool>.filled(cells.size, (_) => false),
         lit = Grid<bool>.filled(cells.size, (_) => false),
         itemGrid = Grid<Item?>.filled(cells.size, (_) => null) {
+    addManyWalls(10, random);
     spawnEnemies(2, random);
     spawnItems(random);
+  }
+
+  void addWall(Random random) {
+    final position = _getRandomGridPositionWithCondition(
+        size, random, (position) => cells.get(position)!.isPassable);
+    cells.set(position, const Cell.wall());
+  }
+
+  void addManyWalls(int numberOfWalls, random) {
+    for (int i = 0; i < numberOfWalls; ++i) {
+      addWall(random);
+    }
   }
 
   void spawnEnemies(int count, Random random) {
