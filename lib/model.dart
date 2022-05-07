@@ -63,7 +63,7 @@ abstract class Mob {
 class Player extends Mob {
   int maxHealth = 10;
   int currentHealth = 10;
-  double lightRadius = 1.5;
+  double lightRadius = 2.5;
 
   Player.spawn(Position location) : super.spawn(location);
 
