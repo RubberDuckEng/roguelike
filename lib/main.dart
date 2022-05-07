@@ -7,33 +7,41 @@ import 'sprite.dart';
 
 class CellPainter {
   final Canvas canvas;
+  final Rect targetRect;
   final Size cellSize;
 
-  CellPainter(this.canvas, this.cellSize);
+  CellPainter(this.canvas, this.targetRect)
+      : cellSize = Size(targetRect.width / kChunkSize.width,
+            targetRect.height / kChunkSize.width);
 
-  Rect rectForPosition(GridPosition position, Size cell) {
-    return Rect.fromLTWH(position.x * cell.width, position.y * cell.height,
-        cell.width, cell.height);
+  Rect rectForPosition(GridPosition position) {
+    return Rect.fromLTWH(
+      targetRect.left + position.x * cellSize.width,
+      targetRect.top + position.y * cellSize.height,
+      cellSize.width,
+      cellSize.height,
+    );
   }
 
   void fillCell(GridPosition position, Color color) {
     final paint = Paint();
     paint.isAntiAlias = false;
     paint.color = color;
-    canvas.drawRect(rectForPosition(position, cellSize), paint);
+    canvas.drawRect(rectForPosition(position), paint);
   }
 
   void paintSprite(Sprite sprite, GridPosition position) {
-    sprite.paint(canvas, rectForPosition(position, cellSize));
+    sprite.paint(canvas, rectForPosition(position));
   }
 }
 
-class WorldPainter extends CustomPainter {
-  final GameState gameState;
+class ChunkPainter {
+  final CellPainter painter;
+  final Chunk chunk;
 
-  WorldPainter(this.gameState);
+  ChunkPainter(this.painter, this.chunk);
 
-  void paintBackground(Chunk chunk, CellPainter painter) {
+  void paintBackground() {
     // allPositions does not guarentee order.
     for (var position in chunk.allGridPositions) {
       var color = chunk.isPassableLocal(position)
@@ -43,11 +51,11 @@ class WorldPainter extends CustomPainter {
     }
   }
 
-  void paintMob(Chunk chunk, CellPainter painter, Mob mob) {
+  void paintMob(Mob mob) {
     painter.paintSprite(mob.sprite, chunk.toLocal(mob.location));
   }
 
-  void paintItems(Chunk chunk, CellPainter painter) {
+  void paintItems() {
     for (var position in chunk.allGridPositions) {
       var item = chunk.itemAtLocal(position);
       if (item != null) {
@@ -56,7 +64,7 @@ class WorldPainter extends CustomPainter {
     }
   }
 
-  void paintFogOfWar(Chunk chunk, CellPainter painter) {
+  void paintFogOfWar() {
     for (var position in chunk.allGridPositions) {
       var isRevealed = chunk.isRevealedLocal(position);
       if (!isRevealed) {
@@ -74,21 +82,24 @@ class WorldPainter extends CustomPainter {
     }
   }
 
-  void paintChunk(Canvas canvas, Chunk chunk, Size size) {
-    final cellSize = Size(size.width / chunk.width, size.height / chunk.height);
-    final painter = CellPainter(canvas, cellSize);
-
-    paintBackground(chunk, painter);
-    paintItems(chunk, painter);
+  void paint(GameState gameState) {
+    paintBackground();
+    paintItems();
     for (var mob in chunk.enemies) {
       // Only paint mobs outside the fog of war.
       if (chunk.isLit(mob.location)) {
-        paintMob(chunk, painter, mob);
+        paintMob(mob);
       }
     }
-    paintMob(chunk, painter, gameState.player);
-    paintFogOfWar(chunk, painter);
+    paintMob(gameState.player);
+    paintFogOfWar();
   }
+}
+
+class WorldPainter extends CustomPainter {
+  final GameState gameState;
+
+  WorldPainter(this.gameState);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -97,12 +108,15 @@ class WorldPainter extends CustomPainter {
         Size(size.width / chunks.width, size.height / chunks.height);
 
     for (var position in chunks.allPositions) {
-      // FIXME: Must be a more efficient way than this?
-      canvas.save();
-      canvas.translate(
-          chunkSize.width * position.x, chunkSize.height * position.y);
-      paintChunk(canvas, chunks.get(position)!, chunkSize);
-      canvas.restore();
+      final targetRect = Rect.fromLTWH(
+        chunkSize.width * position.x,
+        chunkSize.height * position.y,
+        chunkSize.width,
+        chunkSize.height,
+      );
+      final cellPainter = CellPainter(canvas, targetRect);
+      final chunkPainter = ChunkPainter(cellPainter, chunks.get(position)!);
+      chunkPainter.paint(gameState);
     }
   }
 
