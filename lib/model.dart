@@ -52,8 +52,9 @@ GridPosition _getRandomPosition(ISize size, Random random) {
 
 abstract class Mob {
   Position location;
+  Direction lastMoveDirection;
 
-  Mob.spawn(this.location);
+  Mob.spawn(this.location) : lastMoveDirection = Direction.up;
 
   Sprite get sprite;
 
@@ -126,21 +127,14 @@ abstract class Brain {
 }
 
 class Wanderer extends Brain {
-  static const List<Delta> possibleMoves = [
-    Delta.up(),
-    Delta.down(),
-    Delta.left(),
-    Delta.right(),
-  ];
-
   final Mob mob;
   final Random _random;
 
   Wanderer(this.mob, {int? seed}) : _random = Random(seed);
 
   Iterable<Action> possibleActions(GameState state) sync* {
-    for (var delta in possibleMoves) {
-      var position = mob.location + delta;
+    for (var direction in Direction.values) {
+      var position = mob.location + direction.delta;
       if (!state.getChunk(position).isPassable(position)) {
         continue;
       }
@@ -150,7 +144,7 @@ class Wanderer extends Brain {
       if (state.player.location == position) {
         yield AttackAction(target: position, mob: mob);
       }
-      yield MoveAction(destination: position, mob: mob);
+      yield MoveAction(destination: position, direction: direction, mob: mob);
     }
   }
 
@@ -184,13 +178,16 @@ abstract class Action {
 }
 
 class MoveAction extends Action {
+  final Direction direction;
   final Position destination;
 
-  const MoveAction({required this.destination, required super.mob});
+  const MoveAction(
+      {required this.destination, required this.direction, required super.mob});
 
   @override
   void execute(GameState state) {
     mob.location = destination;
+    mob.lastMoveDirection = direction;
     // state.updateChunk();
   }
 }
@@ -451,6 +448,17 @@ class World {
   }
 }
 
+enum Direction {
+  up(Delta.up()),
+  down(Delta.down()),
+  left(Delta.left()),
+  right(Delta.right());
+
+  final Delta delta;
+
+  const Direction(this.delta);
+}
+
 const ISize kChunkSize = ISize(10, 10);
 
 class GameState {
@@ -481,15 +489,19 @@ class GameState {
 
   bool get playerDead => player.currentHealth <= 0;
 
-  Action? actionFor(Player player, Delta delta) {
-    final target = player.location + delta;
+  Action? actionFor(Player player, Direction direction) {
+    final target = player.location + direction.delta;
     final targetChunk = world.get(ChunkId.fromPosition(target));
     final enemy = targetChunk.enemyAt(target);
     if (enemy != null) {
       return AttackAction(target: target, mob: player);
     }
     if (targetChunk.isPassable(target)) {
-      return MoveAction(destination: player.location + delta, mob: player);
+      return MoveAction(
+        destination: player.location + direction.delta,
+        direction: direction,
+        mob: player,
+      );
     }
     return null;
   }

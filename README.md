@@ -76,6 +76,7 @@ Things to do
 ## Animation notes
 * Screen transitions
 * Attack animations
+* Take damage
 * Bumping into wall animations
 * Sprite walking?
 * Moving between

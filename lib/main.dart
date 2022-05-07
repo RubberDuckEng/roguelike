@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'model.dart';
-import 'geometry.dart';
 import 'painting.dart';
 
 class WorldPainter extends CustomPainter {
@@ -184,17 +183,17 @@ class GamePage extends StatefulWidget {
   State<GamePage> createState() => _GamePageState();
 }
 
-Delta deltaFromKey(RawKeyDownEvent event) {
+Direction? directionFromKey(RawKeyDownEvent event) {
   if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-    return const Delta.left();
+    return Direction.left;
   } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-    return const Delta.right();
+    return Direction.right;
   } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-    return const Delta.up();
+    return Direction.up;
   } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-    return const Delta.down();
+    return Direction.down;
   }
-  return const Delta.zero();
+  return null;
 }
 
 class _GamePageState extends State<GamePage> {
@@ -214,8 +213,11 @@ class _GamePageState extends State<GamePage> {
   }
 
   void handleGameKeyEvent(RawKeyDownEvent event) {
-    var delta = deltaFromKey(event);
-    var playerAction = gameState.actionFor(gameState.player, delta);
+    var direction = directionFromKey(event);
+    if (direction == null) {
+      return;
+    }
+    var playerAction = gameState.actionFor(gameState.player, direction);
     setState(() {
       if (playerAction != null) {
         playerAction.execute(gameState);
