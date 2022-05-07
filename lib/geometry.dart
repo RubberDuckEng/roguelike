@@ -114,6 +114,8 @@ class GridPosition {
 
   const GridPosition(this.x, this.y);
 
+  static const zero = GridPosition(0, 0);
+
   @override
   bool operator ==(other) {
     if (other is! GridPosition) {
@@ -153,13 +155,17 @@ class Grid<T> {
   }
 
   T? get(GridPosition position) {
-    if (position.y < 0 || position.y >= _cells.length) {
+    if (position.x < 0 || position.x >= width) {
       return null;
     }
+    if (position.y < 0 || position.y >= height) {
+      return null;
+    }
+    return _get(position);
+  }
+
+  T _get(GridPosition position) {
     final row = _cells[position.y];
-    if (position.x < 0 || position.x >= row.length) {
-      return null;
-    }
     return row[position.x];
   }
 
@@ -170,6 +176,8 @@ class Grid<T> {
       }
     }
   }
+
+  Iterable<T> get cells => allPositions.map((position) => _get(position));
 
   Iterable<List<T>> get cellsByRow => _cells;
 }

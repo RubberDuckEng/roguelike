@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:roguelike/geometry.dart';
 
+import 'drawing.dart';
 import 'model.dart';
 import 'painting.dart';
 
@@ -11,20 +13,44 @@ class WorldPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    final drawing = Drawing();
+    gameState.draw(drawing);
+
+    // TODO: This approach is backwards. We should be given a rectangle in
+    // world coordinates to display in this given size instead of always
+    // squeezing in a 3x3 grid of chunks.
     var chunks = gameState.nearbyChunks;
     final chunkSize =
         Size(size.width / chunks.width, size.height / chunks.height);
+    final cellSize = Size(
+      chunkSize.width / kChunkSize.width,
+      chunkSize.height / kChunkSize.height,
+    );
+    final zeroPosition =
+        chunks.get(GridPosition.zero)!.toGlobal(GridPosition.zero);
+    final origin = Offset(
+      -zeroPosition.x.toDouble() * cellSize.width,
+      -zeroPosition.y.toDouble() * cellSize.height,
+    );
+    final context = DrawingContext(
+      canvas: canvas,
+      origin: origin,
+      cellSize: cellSize,
+    );
 
+    final chunkPainters = <ChunkPainter>[];
     for (var position in chunks.allPositions) {
-      final targetRect = Rect.fromLTWH(
-        chunkSize.width * position.x,
-        chunkSize.height * position.y,
-        chunkSize.width,
-        chunkSize.height,
-      );
-      final cellPainter = CellPainter(canvas, targetRect);
-      final chunkPainter = ChunkPainter(cellPainter, chunks.get(position)!);
-      chunkPainter.paint(gameState);
+      chunkPainters.add(ChunkPainter(context, chunks.get(position)!));
+    }
+
+    for (var painter in chunkPainters) {
+      painter.paintBackground();
+    }
+
+    drawing.paint(context);
+
+    for (var painter in chunkPainters) {
+      painter.paintForeground();
     }
   }
 

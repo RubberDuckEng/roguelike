@@ -63,8 +63,19 @@ abstract class Mob {
 
   Drawable get drawable;
 
-  DrawingElement get drawing => DrawingElement(
-      drawable: drawable, position: VisualPosition.from(location));
+  void draw(Drawing drawing) {
+    final element = DrawingElement(
+      drawable: drawable,
+      position: VisualPosition.from(location),
+    );
+    drawing.add(this, element);
+
+    if (carryingBlock) {
+      // TODO: Carried block.
+      // painter.paintCarriedBlock(chunk.toLocal(mob.location),
+      //     Colors.brown.shade600, mob.lastMoveDirection);
+    }
+  }
 
   void hit(GameState state) {}
 }
@@ -250,16 +261,35 @@ class Chunk {
   final Grid<Cell> cells;
   final Grid<bool> mapped;
   final Grid<bool> lit;
-  final Grid<Item?> itemGrid;
+  final Grid<Item?> items;
 
   Chunk(this.cells, this.chunkId, Random random)
       : enemies = [],
         mapped = Grid<bool>.filled(cells.size, (_) => false),
         lit = Grid<bool>.filled(cells.size, (_) => false),
-        itemGrid = Grid<Item?>.filled(cells.size, (_) => null) {
+        items = Grid<Item?>.filled(cells.size, (_) => null) {
     addManyWalls(10, random);
     spawnEnemies(2, random);
     spawnItems(random);
+  }
+
+  void draw(Drawing drawing) {
+    for (var position in items.allPositions) {
+      final item = items.get(position);
+      if (item == null) {
+        continue;
+      }
+      final element = DrawingElement(
+        drawable: item.drawable,
+        position: VisualPosition.from(toGlobal(position)),
+      );
+      drawing.add(item, element);
+    }
+    for (var enemy in enemies) {
+      if (isLit(enemy.location)) {
+        enemy.draw(drawing);
+      }
+    }
   }
 
   void addWall(Random random) {
@@ -389,18 +419,18 @@ class Chunk {
   bool isLit(Position position) => lit.get(toLocal(position)) ?? false;
 
   Item? pickupItem(Position position) {
-    var item = itemGrid.get(toLocal(position));
+    var item = items.get(toLocal(position));
     if (item != null) {
-      itemGrid.set(toLocal(position), null);
+      items.set(toLocal(position), null);
     }
     return item;
   }
 
   void setItemAt(Position position, Item item) =>
-      itemGrid.set(toLocal(position), item);
+      items.set(toLocal(position), item);
 
-  Item? itemAtLocal(GridPosition position) => itemGrid.get(position);
-  Item? itemAt(Position position) => itemGrid.get(toLocal(position));
+  Item? itemAtLocal(GridPosition position) => items.get(position);
+  Item? itemAt(Position position) => items.get(toLocal(position));
 
   Position getItemSpawnLocation(Random random) {
     return toGlobal(_getRandomGridPositionWithCondition(size, random,
@@ -539,6 +569,13 @@ class GameState {
         const ISize(3, 3),
         (position) =>
             world.get(ChunkId(offset.dx + position.x, offset.dy + position.y)));
+  }
+
+  void draw(Drawing drawing) {
+    for (var chunk in nearbyChunks.cells) {
+      chunk.draw(drawing);
+    }
+    player.draw(drawing);
   }
 
   bool get playerDead => player.currentHealth <= 0;

@@ -56,6 +56,31 @@ abstract class Drawable {
   void paint(Canvas canvas, Rect rect);
 }
 
+class DrawingContext {
+  final Canvas canvas;
+  final Offset origin;
+  final Size cellSize;
+
+  DrawingContext({
+    required this.canvas,
+    required this.origin,
+    required this.cellSize,
+  });
+
+  Offset toCanvas(VisualPosition position) {
+    return Offset(
+      origin.dx + cellSize.width * position.x,
+      origin.dy + cellSize.height * position.y,
+    );
+  }
+
+  Rect toCellRect(VisualPosition position) => toCanvas(position) & cellSize;
+
+  void paintDrawable(Drawable drawable, VisualPosition position) {
+    drawable.paint(canvas, toCellRect(position));
+  }
+}
+
 class DrawingElement {
   final Drawable drawable;
   final VisualPosition position;
@@ -69,8 +94,9 @@ class DrawingElement {
     this.opacity,
   });
 
-  void paint(Canvas canvas, Offset offset, Size cellSize) {
-    drawable.paint(canvas, offset & cellSize);
+  void paint(DrawingContext context) {
+    // TODO: Rotation and opacity.
+    context.paintDrawable(drawable, position);
   }
 
   DrawingElement operator *(double operand) {
@@ -114,6 +140,12 @@ class Drawing {
 
   void add(Object key, DrawingElement element) {
     elements[key] = element;
+  }
+
+  void paint(DrawingContext context) {
+    for (var element in elements.values) {
+      element.paint(context);
+    }
   }
 
   Drawing operator *(double operand) {
