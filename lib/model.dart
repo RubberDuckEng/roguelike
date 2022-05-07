@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:roguelike/main.dart';
+
 import 'geometry.dart';
 import 'sprite.dart';
 import 'items.dart';
@@ -18,6 +20,7 @@ class Cell {
   const Cell.outOfBounds() : type = CellType.outOfBounds;
 
   bool get isPassable => type == CellType.empty;
+  bool get isWall => type == CellType.wall;
 
   String toCharRepresentation() {
     switch (type) {
@@ -53,8 +56,11 @@ GridPosition _getRandomPosition(ISize size, Random random) {
 abstract class Mob {
   Position location;
   Direction lastMoveDirection;
+  bool carryingBlock;
 
-  Mob.spawn(this.location) : lastMoveDirection = Direction.up;
+  Mob.spawn(this.location)
+      : lastMoveDirection = Direction.up,
+        carryingBlock = true;
 
   Sprite get sprite;
 
@@ -276,6 +282,11 @@ class Chunk {
       cells.get(position) ?? const Cell.outOfBounds();
   Cell getCell(Position position) => getCellLocal(toLocal(position));
 
+  void setCellLocal(GridPosition position, Cell cell) =>
+      cells.set(position, cell);
+  void setCell(Position position, Cell cell) =>
+      setCellLocal(toLocal(position), cell);
+
   Iterable<Position> traversableNeighbors(Position position) sync* {
     var deltas = const [Delta.up(), Delta.down(), Delta.left(), Delta.right()];
     for (var delta in deltas) {
@@ -489,7 +500,29 @@ class GameState {
 
   bool get playerDead => player.currentHealth <= 0;
 
-  Action? actionFor(Player player, Direction direction) {
+  Action? actionFor(Player player, LogicalEvent logical) {
+    if (logical.interact) {
+      var direction = player.lastMoveDirection;
+      final target = player.location + direction.delta;
+      final targetChunk = world.get(ChunkId.fromPosition(target));
+      final cell = targetChunk.getCell(target);
+      if (player.carryingBlock) {
+        if (cell.isPassable) {
+          targetChunk.setCell(target, const Cell.wall());
+          player.carryingBlock = false;
+        }
+      } else {
+        if (cell.isWall) {
+          targetChunk.setCell(target, const Cell.empty());
+          player.carryingBlock = true;
+        }
+      }
+    }
+
+    var direction = logical.direction;
+    if (direction == null) {
+      return null;
+    }
     final target = player.location + direction.delta;
     final targetChunk = world.get(ChunkId.fromPosition(target));
     final enemy = targetChunk.enemyAt(target);

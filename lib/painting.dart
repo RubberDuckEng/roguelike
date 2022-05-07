@@ -22,6 +22,20 @@ class CellPainter {
     );
   }
 
+  void paintCarriedBlock(
+      GridPosition position, Color color, Direction direction) {
+    final paint = Paint();
+    paint.isAntiAlias = false;
+    paint.color = color;
+    // FIXME: Use direction?
+    var cellRect = rectForPosition(position);
+    var blockRect = Rect.fromCenter(
+        center: cellRect.center - Offset(0, cellRect.height / 2),
+        width: cellRect.width / 4,
+        height: cellRect.height / 4);
+    canvas.drawRect(blockRect, paint);
+  }
+
   void fillCell(GridPosition position, Color color) {
     final paint = Paint();
     paint.isAntiAlias = false;
@@ -51,6 +65,10 @@ class ChunkPainter {
   }
 
   void paintMob(Mob mob) {
+    if (mob.carryingBlock) {
+      painter.paintCarriedBlock(chunk.toLocal(mob.location),
+          Colors.brown.shade600, mob.lastMoveDirection);
+    }
     painter.paintSprite(mob.sprite, chunk.toLocal(mob.location));
   }
 

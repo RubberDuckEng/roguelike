@@ -183,17 +183,28 @@ class GamePage extends StatefulWidget {
   State<GamePage> createState() => _GamePageState();
 }
 
-Direction? directionFromKey(RawKeyDownEvent event) {
+LogicalEvent? logicalEventFor(RawKeyDownEvent event) {
+  if (event.logicalKey == LogicalKeyboardKey.space) {
+    return LogicalEvent.interact();
+  }
   if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-    return Direction.left;
+    return LogicalEvent.move(Direction.left);
   } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-    return Direction.right;
+    return LogicalEvent.move(Direction.right);
   } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-    return Direction.up;
+    return LogicalEvent.move(Direction.up);
   } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-    return Direction.down;
+    return LogicalEvent.move(Direction.down);
   }
   return null;
+}
+
+class LogicalEvent {
+  Direction? direction;
+  bool interact;
+
+  LogicalEvent.move(this.direction) : interact = false;
+  LogicalEvent.interact() : interact = true;
 }
 
 class _GamePageState extends State<GamePage> {
@@ -213,11 +224,11 @@ class _GamePageState extends State<GamePage> {
   }
 
   void handleGameKeyEvent(RawKeyDownEvent event) {
-    var direction = directionFromKey(event);
-    if (direction == null) {
+    var logical = logicalEventFor(event);
+    if (logical == null) {
       return;
     }
-    var playerAction = gameState.actionFor(gameState.player, direction);
+    var playerAction = gameState.actionFor(gameState.player, logical);
     setState(() {
       if (playerAction != null) {
         playerAction.execute(gameState);
