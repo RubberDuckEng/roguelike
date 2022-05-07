@@ -1,6 +1,6 @@
 import 'dart:math';
 
-import 'drawable.dart';
+import 'drawing.dart';
 import 'geometry.dart';
 import 'sprite.dart';
 import 'items.dart';

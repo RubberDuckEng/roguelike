@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'model.dart';
 import 'geometry.dart';
-import 'drawable.dart';
+import 'drawing.dart';
 
 class CellPainter {
   final Canvas canvas;

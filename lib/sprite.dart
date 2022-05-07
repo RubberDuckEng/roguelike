@@ -2,7 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart' hide TextStyle;
 
-import 'drawable.dart';
+import 'drawing.dart';
 
 abstract class Sprite extends Drawable {
   const Sprite();

@@ -1,4 +1,4 @@
-import 'drawable.dart';
+import 'drawing.dart';
 import 'model.dart';
 import 'sprite.dart';
 
