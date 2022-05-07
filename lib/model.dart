@@ -60,7 +60,7 @@ abstract class Mob {
 
   Mob.spawn(this.location)
       : lastMoveDirection = Direction.up,
-        carryingBlock = true;
+        carryingBlock = false;
 
   Sprite get sprite;
 
@@ -206,6 +206,39 @@ class AttackAction extends Action {
   @override
   void execute(GameState state) {
     state.mobAt(target)?.hit(state);
+  }
+}
+
+class InteractAction extends Action {
+  final Position target;
+
+  const InteractAction({required this.target, required super.mob});
+
+  static canInteractWith(GameState state, Mob mob, Position target) {
+    final targetChunk = state.world.get(ChunkId.fromPosition(target));
+    final cell = targetChunk.getCell(target);
+    return mob.carryingBlock && cell.isPassable ||
+        (!mob.carryingBlock && cell.isWall);
+  }
+
+  @override
+  void execute(GameState state) {
+    final player = state.player;
+    final direction = player.lastMoveDirection;
+    final target = player.location + direction.delta;
+    final targetChunk = state.world.get(ChunkId.fromPosition(target));
+    final cell = targetChunk.getCell(target);
+    if (player.carryingBlock) {
+      if (cell.isPassable) {
+        targetChunk.setCell(target, const Cell.wall());
+        player.carryingBlock = false;
+      }
+    } else {
+      if (cell.isWall) {
+        targetChunk.setCell(target, const Cell.empty());
+        player.carryingBlock = true;
+      }
+    }
   }
 }
 
@@ -504,18 +537,8 @@ class GameState {
     if (logical.interact) {
       var direction = player.lastMoveDirection;
       final target = player.location + direction.delta;
-      final targetChunk = world.get(ChunkId.fromPosition(target));
-      final cell = targetChunk.getCell(target);
-      if (player.carryingBlock) {
-        if (cell.isPassable) {
-          targetChunk.setCell(target, const Cell.wall());
-          player.carryingBlock = false;
-        }
-      } else {
-        if (cell.isWall) {
-          targetChunk.setCell(target, const Cell.empty());
-          player.carryingBlock = true;
-        }
+      if (InteractAction.canInteractWith(this, player, target)) {
+        return InteractAction(target: target, mob: player);
       }
     }
 
