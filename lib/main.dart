@@ -199,14 +199,6 @@ LogicalEvent? logicalEventFor(RawKeyDownEvent event) {
   return null;
 }
 
-class LogicalEvent {
-  Direction? direction;
-  bool interact;
-
-  LogicalEvent.move(this.direction) : interact = false;
-  LogicalEvent.interact() : interact = true;
-}
-
 class _GamePageState extends State<GamePage> {
   final focusNode = FocusNode();
   late GameState gameState;

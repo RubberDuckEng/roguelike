@@ -1,8 +1,5 @@
 import 'dart:math';
 
-// TODO: Importing main here isn't correct.
-import 'main.dart';
-
 import 'drawable.dart';
 import 'geometry.dart';
 import 'sprite.dart';
@@ -509,6 +506,14 @@ enum Direction {
 }
 
 const ISize kChunkSize = ISize(10, 10);
+
+class LogicalEvent {
+  Direction? direction;
+  bool interact;
+
+  LogicalEvent.move(this.direction) : interact = false;
+  LogicalEvent.interact() : interact = true;
+}
 
 class GameState {
   late Player player;
