@@ -7,14 +7,14 @@ abstract class Item {
   Sprite get sprite;
 }
 
-class LevelMap extends Item {
+class AreaReveal extends Item {
   @override
   void onPickup(GameState state) {
-    state.visibleChunk.revealAll();
+    state.revealAround(state.player.location, 10.0);
   }
 
   @override
-  Sprite get sprite => Sprites.map;
+  Sprite get sprite => Sprites.firework;
 }
 
 class HealOne extends Item {

@@ -238,7 +238,7 @@ class Chunk {
   }
 
   void spawnItems(Random random) {
-    spawnOneItem(LevelMap(), random);
+    spawnOneItem(AreaReveal(), random, chance: 0.50);
     spawnOneItem(HealOne(), random, chance: 0.70);
     spawnOneItem(HealAll(), random, chance: 0.20);
     spawnOneItem(Torch(), random, chance: 0.05);
@@ -380,11 +380,11 @@ class Chunk {
     return null;
   }
 
-  void revealAll() {
-    for (var position in allGridPositions) {
-      mapped.set(position, true);
-    }
-  }
+  // void revealAll() {
+  //   for (var position in allGridPositions) {
+  //     mapped.set(position, true);
+  //   }
+  // }
 
   void removeEnemy(Enemy enemy, {Item? droppedItem}) {
     enemies.remove(enemy);
@@ -486,6 +486,19 @@ class GameState {
       return player;
     }
     return getChunk(position).enemyAt(position);
+  }
+
+  void revealAround(Position position, double radius) {
+    var gridRadius = radius.ceil();
+    for (var position
+        in player.location.positionsInNearbyGrid(gridRadius, gridRadius)) {
+      var delta = position.deltaTo(player.location);
+      var chunk = getChunk(position);
+      var gridPosition = chunk.toLocal(position);
+      if (delta.magnitude < radius) {
+        chunk.mapped.set(gridPosition, true);
+      }
+    }
   }
 
   void updateVisibility() {

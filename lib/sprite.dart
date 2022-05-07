@@ -49,6 +49,7 @@ class Sprites {
 
   static const IconSprite key = IconSprite(IconData(0x1F511));
   static const IconSprite map = IconSprite(IconData(0x1F5FA));
+  static const IconSprite firework = IconSprite(IconData(0x1F387));
   static const IconSprite heart = IconSprite(IconData(0x1F49C));
   static const IconSprite sparkleHeart = IconSprite(IconData(0x1F496));
   static const IconSprite alienMonster = IconSprite(IconData(0x1F47E));
