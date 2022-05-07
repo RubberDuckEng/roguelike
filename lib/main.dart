@@ -113,6 +113,30 @@ class HeadsUpDisplay extends StatelessWidget {
   }
 }
 
+class MenuOverlay extends StatefulWidget {
+  const MenuOverlay({Key? key}) : super(key: key);
+
+  @override
+  State<MenuOverlay> createState() => _MenuOverlayState();
+}
+
+class _MenuOverlayState extends State<MenuOverlay> {
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Container(decoration: const BoxDecoration(color: Colors.black26)),
+        Column(
+          children: const [
+            Text("DEAD"),
+            Text("Press space to continue."),
+          ],
+        )
+      ],
+    );
+  }
+}
+
 class WorldView extends StatelessWidget {
   final GameState gameState;
 
@@ -129,7 +153,8 @@ class WorldView extends StatelessWidget {
         Align(
           alignment: Alignment.bottomRight,
           child: HeadsUpDisplay(gameState: gameState),
-        )
+        ),
+        if (gameState.playerDead) const MenuOverlay(),
       ],
     );
   }
@@ -183,7 +208,20 @@ class _GamePageState extends State<GamePage> {
   }
 
   void newGame() {
-    gameState = GameState.demo();
+    setState(() {
+      gameState = GameState.demo();
+    });
+  }
+
+  void handleGameKeyEvent(RawKeyDownEvent event) {
+    var delta = deltaFromKey(event);
+    var playerAction = gameState.actionFor(gameState.player, delta);
+    setState(() {
+      if (playerAction != null) {
+        playerAction.execute(gameState);
+      }
+      gameState.nextTurn();
+    });
   }
 
   @override
@@ -198,14 +236,11 @@ class _GamePageState extends State<GamePage> {
             focusNode: focusNode,
             onKey: (event) {
               if (event is RawKeyDownEvent) {
-                var delta = deltaFromKey(event);
-                var playerAction = gameState.actionFor(gameState.player, delta);
-                setState(() {
-                  if (playerAction != null) {
-                    playerAction.execute(gameState);
-                  }
-                  gameState.nextTurn();
-                });
+                if (!gameState.playerDead) {
+                  handleGameKeyEvent(event);
+                } else if (event.isKeyPressed(LogicalKeyboardKey.space)) {
+                  newGame();
+                }
               }
             },
             child: WorldView(

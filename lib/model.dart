@@ -70,7 +70,7 @@ class Player extends Mob {
   int get missingHealth => maxHealth - currentHealth;
 
   @override
-  Sprite get sprite => Sprites.bug;
+  Sprite get sprite => Sprites.ladyBug;
 
   void move(Delta delta) {
     location += delta;
