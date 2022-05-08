@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
 import 'drawing.dart';
@@ -9,9 +10,25 @@ class GameController extends ChangeNotifier {
 
   late Drawing drawing;
   late Rect window;
+  Duration elapsed = const Duration();
 
-  GameController() {
+  late Ticker _ticker;
+
+  GameController(TickerProvider vsync) {
+    _ticker = vsync.createTicker(_tick);
     _updateDrawing();
+    _ticker.start();
+  }
+
+  @override
+  void dispose() {
+    _ticker.dispose();
+    super.dispose();
+  }
+
+  void _tick(Duration elapsed) {
+    this.elapsed = elapsed;
+    notifyListeners();
   }
 
   LogicalEvent? _logicalEventFor(RawKeyDownEvent event) {
@@ -82,6 +99,7 @@ class WorldPainter extends CustomPainter {
         -topLeft.dy * cellSize.height,
       ),
       cellSize: cellSize,
+      elapsed: controller.elapsed,
     );
     controller.drawing.paint(context);
   }
@@ -242,9 +260,22 @@ class GamePage extends StatefulWidget {
   State<GamePage> createState() => _GamePageState();
 }
 
-class _GamePageState extends State<GamePage> {
+class _GamePageState extends State<GamePage>
+    with SingleTickerProviderStateMixin {
   final focusNode = FocusNode();
-  final GameController controller = GameController();
+  late GameController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = GameController(this);
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

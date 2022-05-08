@@ -65,31 +65,7 @@ abstract class Mob {
 
   Drawable get drawable;
 
-  void draw(Drawing drawing) {
-    var avatar = drawable;
-
-    if (carryingBlock) {
-      final block = TransformDrawable.rst(
-        scale: 0.25,
-        dx: 0.0,
-        dy: -0.6,
-        drawable: SolidDrawable(Colors.brown.shade600),
-      );
-      avatar = CompositeDrawable([avatar, block]);
-    }
-
-    avatar = TransformDrawable.rst(
-      rotation: lastMoveDirection.rotation,
-      drawable: avatar,
-    );
-
-    final element = DrawingElement(
-      drawable: avatar,
-      position: VisualPosition.from(location),
-    );
-
-    drawing.add(this, element);
-  }
+  void draw(Drawing drawing);
 
   void hit(GameState state) {}
 }
@@ -122,6 +98,33 @@ class Player extends Mob {
   void hit(GameState state) {
     applyHealthChange(-1);
   }
+
+  @override
+  void draw(Drawing drawing) {
+    var avatar = drawable;
+
+    if (carryingBlock) {
+      final block = TransformDrawable.rst(
+        scale: 0.25,
+        dx: 0.0,
+        dy: -0.6,
+        drawable: SolidDrawable(Colors.brown.shade600),
+      );
+      avatar = CompositeDrawable([avatar, block]);
+    }
+
+    avatar = TransformDrawable.rst(
+      rotation: lastMoveDirection.rotation,
+      drawable: avatar,
+    );
+
+    final element = DrawingElement(
+      drawable: avatar,
+      position: VisualPosition.from(location),
+    );
+
+    drawing.add(this, element);
+  }
 }
 
 class Enemy extends Mob {
@@ -152,6 +155,21 @@ class Enemy extends Mob {
   void hit(GameState state) {
     var item = rollForItem(state.random);
     state.getChunk(location).removeEnemy(this, droppedItem: item);
+  }
+
+  @override
+  void draw(Drawing drawing) {
+    var avatar = OrbitAnimation(
+      const CircularOrbit(radius: 0.1, period: Duration(seconds: 2)),
+      drawable,
+    );
+
+    final element = DrawingElement(
+      drawable: avatar,
+      position: VisualPosition.from(location),
+    );
+
+    drawing.add(this, element);
   }
 }
 

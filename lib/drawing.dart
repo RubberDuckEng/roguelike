@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -56,11 +57,13 @@ class DrawingContext {
   final Canvas canvas;
   final Offset origin;
   final Size cellSize;
+  final Duration elapsed;
 
   DrawingContext({
     required this.canvas,
     required this.origin,
     required this.cellSize,
+    required this.elapsed,
   });
 
   Offset toCanvas(VisualPosition position) {
@@ -166,6 +169,42 @@ class TransformDrawable extends Drawable {
     canvas.transform(transform.storage);
     drawable.paint(context, Offset.zero);
     canvas.restore();
+  }
+}
+
+abstract class Orbit {
+  const Orbit();
+
+  Offset getOffset(DrawingContext context);
+}
+
+class CircularOrbit extends Orbit {
+  final double radius;
+  final Duration period;
+
+  const CircularOrbit({required this.radius, required this.period});
+
+  @override
+  Offset getOffset(DrawingContext context) {
+    final angle =
+        2 * pi * (context.elapsed.inMicroseconds / period.inMicroseconds);
+    final cellSize = context.cellSize;
+    return Offset(
+      radius * cos(angle) * cellSize.width,
+      radius * sin(angle) * cellSize.height,
+    );
+  }
+}
+
+class OrbitAnimation extends Drawable {
+  final Drawable drawable;
+  final Orbit orbit;
+
+  const OrbitAnimation(this.orbit, this.drawable);
+
+  @override
+  void paint(DrawingContext context, Offset offset) {
+    drawable.paint(context, offset + orbit.getOffset(context));
   }
 }
 
