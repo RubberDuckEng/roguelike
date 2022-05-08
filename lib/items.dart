@@ -40,7 +40,7 @@ class HealOne extends Item {
 
   @override
   void onPickup(GameState state) {
-    state.player.applyHealthChange(1);
+    state.player.applyHealthChange(state, 1);
   }
 
   @override
@@ -52,7 +52,7 @@ class HealAll extends Item {
 
   @override
   void onPickup(GameState state) {
-    state.player.applyHealthChange(state.player.maxHealth);
+    state.player.applyHealthChange(state, state.player.maxHealth);
   }
 
   @override

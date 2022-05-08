@@ -1,9 +1,7 @@
 import 'dart:collection';
 import 'dart:math';
-import 'dart:ui';
 
-import 'package:flutter/animation.dart';
-import 'package:vector_math/vector_math_64.dart';
+import 'package:flutter/material.dart';
 
 import 'geometry.dart';
 import 'sprite.dart';
@@ -83,6 +81,37 @@ class CompositeDrawable extends Drawable {
     for (var drawable in drawables) {
       drawable.paint(context, offset);
     }
+  }
+}
+
+class HealthBarDrawable extends Drawable {
+  final int currentHealth;
+  final int maxHealth;
+
+  const HealthBarDrawable({
+    required this.currentHealth,
+    required this.maxHealth,
+  });
+
+  @override
+  void paint(DrawingContext context, Offset offset) {
+    final cellSize = context.cellSize;
+    final width = cellSize.width * 0.8;
+    const kHeight = 4.0;
+    final canvas = context.canvas;
+    final paint = Paint()
+      ..isAntiAlias = false
+      ..color = Colors.white;
+    final center = Offset(cellSize.center(offset).dx, offset.dy - kHeight);
+    final outerRect =
+        Rect.fromCenter(center: center, width: width, height: kHeight);
+    canvas.drawRect(outerRect, paint);
+    final innerRect = outerRect.deflate(1.0);
+    final healthValue = currentHealth / maxHealth;
+    final healthRect = Rect.fromLTWH(innerRect.left, innerRect.top,
+        innerRect.width * healthValue, innerRect.height);
+    paint.color = Colors.green.shade500;
+    canvas.drawRect(healthRect, paint);
   }
 }
 

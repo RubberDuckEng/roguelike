@@ -10,8 +10,8 @@ import 'sprite.dart';
 import 'world.dart';
 
 abstract class Character extends Mob {
-  int maxHealth = 10;
-  int currentHealth = 10;
+  int maxHealth;
+  int currentHealth;
   Direction lastMoveDirection = Direction.up;
 
   Character({
@@ -20,7 +20,18 @@ abstract class Character extends Mob {
     required this.currentHealth,
   });
 
-  void hit(GameState state) {}
+  void applyHealthChange(GameState state, int delta) {
+    currentHealth = max(min(currentHealth + delta, maxHealth), 0);
+    if (currentHealth == 0) {
+      didExhaustHealth(state);
+    }
+  }
+
+  void hit(GameState state, int amount) {
+    applyHealthChange(state, -amount);
+  }
+
+  void didExhaustHealth(GameState state) {}
 }
 
 class Player extends Character {
@@ -51,36 +62,28 @@ class Player extends Character {
       drawable: avatar,
     );
   }
-
-  void move(Delta delta) {
-    location += delta;
-  }
-
-  void applyHealthChange(int amount) {
-    currentHealth += amount;
-    if (currentHealth < 0) {
-      // die;
-    }
-    currentHealth = max(min(currentHealth, maxHealth), 0);
-  }
-
-  @override
-  void hit(GameState state) {
-    applyHealthChange(-1);
-  }
 }
 
 class Enemy extends Character {
   Brain? brain;
 
+  bool get showHealthBar => currentHealth != maxHealth;
+
   @override
-  Drawable get drawable => const OrbitAnimation(
-        CircularOrbit(radius: 0.1, period: Duration(seconds: 2)),
-        SpriteDrawable(Sprites.alienMonster),
-      );
+  Drawable get drawable => CompositeDrawable([
+        const OrbitAnimation(
+          CircularOrbit(radius: 0.1, period: Duration(seconds: 2)),
+          SpriteDrawable(Sprites.alienMonster),
+        ),
+        if (showHealthBar)
+          HealthBarDrawable(
+            currentHealth: currentHealth,
+            maxHealth: maxHealth,
+          ),
+      ]);
 
   Enemy.spawn(Position location)
-      : super(location: location, maxHealth: 1, currentHealth: 1);
+      : super(location: location, maxHealth: 2, currentHealth: 2);
 
   void update(GameState state) {
     brain?.update(state);
@@ -97,7 +100,7 @@ class Enemy extends Character {
   }
 
   @override
-  void hit(GameState state) {
+  void didExhaustHealth(GameState state) {
     var item = rollForItem(state.random);
     state.world.removeEnemy(this, droppedItem: item);
   }
@@ -180,12 +183,17 @@ class MoveAction extends GameAction {
 
 class AttackAction extends GameAction {
   final Position target;
+  final int amount;
 
-  const AttackAction({required this.target, required super.character});
+  const AttackAction({
+    required this.target,
+    required super.character,
+    this.amount = 1,
+  });
 
   @override
   void execute(GameState state) {
-    state.characterAt(target)?.hit(state);
+    state.characterAt(target)?.hit(state, amount);
   }
 }
 
