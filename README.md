@@ -123,6 +123,7 @@ Emotionally
 * Damages nearby enemies passively
 * Tools (for affecting blocks)
 * Movement items (make you go faster, be able to pass traps w/o triggering, etc.)
+* Increases luck (changes spawn rates of certain items)
 
 
 ## Active Item ideas
