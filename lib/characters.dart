@@ -71,21 +71,25 @@ class Drop {
   const Drop(this.chance, this.item);
 }
 
-typedef BrainFactory = Brain Function(Character character, Random random);
+typedef BrainFactory = Brain Function(Enemy enemy, Random random);
 
 class EnemyDescriptor {
   final String name;
-  final int maxHealth;
-  final Drawable drawable;
-  final List<Drop> drops;
   final BrainFactory brain;
+  final int attackRange;
+  final int maxHealth;
+  final int aggroRadius;
+  final List<Drop> drops;
+  final Drawable drawable;
 
   const EnemyDescriptor({
     required this.name,
     required this.brain,
+    required this.attackRange,
     required this.maxHealth,
-    required this.drawable,
+    required this.aggroRadius,
     required this.drops,
+    required this.drawable,
   });
 
   Enemy spawn(Position location, {int? seed}) {
@@ -102,6 +106,8 @@ class Enemies {
     name: 'Alien',
     brain: Wanderer.new,
     maxHealth: 2,
+    attackRange: 1,
+    aggroRadius: 3,
     drops: [
       Drop(0.2, HealOne.new),
       Drop(0.1, HealAll.new),
@@ -164,25 +170,48 @@ abstract class Brain {
 }
 
 class Wanderer extends Brain {
-  final Character character;
+  final Enemy enemy;
   final Random random;
 
-  Wanderer(this.character, this.random);
+  Wanderer(this.enemy, this.random);
 
   Iterable<GameAction> possibleActions(GameState state) sync* {
-    for (var direction in Direction.values) {
-      var position = character.location + direction.delta;
+    final deltaToPlayer = enemy.location.deltaTo(state.player.location);
+    final distanceToPlayer = deltaToPlayer.manhattanDistance;
+    final descriptor = enemy.descriptor;
+    if (distanceToPlayer <= descriptor.attackRange) {
+      yield AttackAction(target: state.player.location, character: enemy);
+      return;
+    }
+
+    final directions = [];
+    if (distanceToPlayer <= descriptor.aggroRadius) {
+      if (deltaToPlayer.dx < 0) {
+        directions.add(Direction.left);
+      }
+      if (deltaToPlayer.dx > 0) {
+        directions.add(Direction.right);
+      }
+      if (deltaToPlayer.dy < 0) {
+        directions.add(Direction.up);
+      }
+      if (deltaToPlayer.dy > 0) {
+        directions.add(Direction.down);
+      }
+    } else {
+      directions.addAll(Direction.values);
+    }
+
+    for (var direction in directions) {
+      var position = enemy.location + direction.delta;
       if (!state.world.isPassable(position)) {
         continue;
       }
       if (state.world.enemyAt(position) != null) {
         continue;
       }
-      if (state.player.location == position) {
-        yield AttackAction(target: position, character: character);
-      }
       yield MoveAction(
-          destination: position, direction: direction, character: character);
+          destination: position, direction: direction, character: enemy);
     }
   }
 
