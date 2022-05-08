@@ -77,7 +77,7 @@ class GameController extends ChangeNotifier {
     return drawing;
   }
 
-  Rect _getWindow() => state.visibleChunk.bounds.inflate(5.0);
+  Rect _getWindow() => state.focusedChunk.bounds.inflate(5.0);
 
   void _update() {
     _drawingTween
@@ -191,7 +191,7 @@ class LevelIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text("Chunk: ${gameState.visibleChunk.chunkId}");
+    return Text("Chunk: ${gameState.focusedChunk.chunkId}");
   }
 }
 

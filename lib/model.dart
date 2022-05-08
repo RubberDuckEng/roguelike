@@ -27,13 +27,13 @@ class GameState {
     updateVisibility();
   }
 
-  Chunk get visibleChunk => getChunk(player.location);
+  Chunk get focusedChunk => getChunk(player.location);
 
   Chunk getChunk(Position position) =>
       world.get(ChunkId.fromPosition(position));
 
-  Grid<Chunk> get nearbyChunks {
-    var offset = Delta(visibleChunk.chunkId.x - 1, visibleChunk.chunkId.y - 1);
+  Grid<Chunk> get activeChunks {
+    var offset = Delta(focusedChunk.chunkId.x - 1, focusedChunk.chunkId.y - 1);
     return Grid.filled(
         const ISize(3, 3),
         (position) =>
@@ -41,7 +41,7 @@ class GameState {
   }
 
   void draw(Drawing drawing) {
-    for (var chunk in nearbyChunks.cells) {
+    for (var chunk in activeChunks.cells) {
       chunk.draw(drawing);
     }
     player.draw(drawing);
@@ -63,12 +63,11 @@ class GameState {
       return null;
     }
     final target = player.location + direction.delta;
-    final targetChunk = world.get(ChunkId.fromPosition(target));
-    final enemy = targetChunk.enemyAt(target);
+    final enemy = world.enemyAt(target);
     if (enemy != null) {
       return AttackAction(target: target, character: player);
     }
-    if (targetChunk.isPassable(target)) {
+    if (world.isPassable(target)) {
       return MoveAction(
         destination: player.location + direction.delta,
         direction: direction,
@@ -115,10 +114,10 @@ class GameState {
   }
 
   void nextTurn() {
-    for (var enemy in visibleChunk.enemies) {
-      enemy.update(this);
+    for (var chunk in activeChunks.cells) {
+      chunk.update(this);
     }
-    var item = visibleChunk.pickupItem(player.location);
+    var item = world.pickupItem(player.location);
     if (item != null) {
       item.onPickup(this);
     }

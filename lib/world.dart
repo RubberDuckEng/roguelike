@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:roguelike/model.dart';
 
 import 'characters.dart';
 import 'drawing.dart';
@@ -13,7 +14,6 @@ const ISize kChunkSize = ISize(10, 10);
 enum CellType {
   empty,
   wall,
-  outOfBounds,
 }
 
 class Cell {
@@ -21,7 +21,6 @@ class Cell {
 
   const Cell.empty() : type = CellType.empty;
   const Cell.wall() : type = CellType.wall;
-  const Cell.outOfBounds() : type = CellType.outOfBounds;
 
   bool get isPassable => type == CellType.empty;
   bool get isWall => type == CellType.wall;
@@ -32,8 +31,6 @@ class Cell {
         return ' ';
       case CellType.wall:
         return 'w';
-      case CellType.outOfBounds:
-        return '☠️';
     }
   }
 }
@@ -111,9 +108,15 @@ class Chunk {
     }
   }
 
+  void update(GameState state) {
+    for (var enemy in enemies) {
+      enemy.update(state);
+    }
+  }
+
   void addWall(Random random) {
     final position = _getRandomGridPositionWithCondition(
-        size, random, (position) => cells.get(position)!.isPassable);
+        size, random, (position) => _getCellLocal(position).isPassable);
     cells.set(position, const Cell.wall());
   }
 
@@ -145,12 +148,10 @@ class Chunk {
   }
 
   ISize get size => cells.size;
-  int get width => cells.width;
-  int get height => cells.height;
 
-  bool isPassableLocal(GridPosition position) =>
-      getCellLocal(position).isPassable;
-  bool isPassable(Position position) => isPassableLocal(toLocal(position));
+  bool _isPassableLocal(GridPosition position) =>
+      _getCellLocal(position).isPassable;
+  bool isPassable(Position position) => _isPassableLocal(toLocal(position));
 
   GridPosition toLocal(Position position) {
     return GridPosition(position.x - chunkId.x * kChunkSize.width,
@@ -164,63 +165,16 @@ class Chunk {
 
   Rect get bounds => toGlobal(GridPosition.zero).toOffset() & size.toSize();
 
-  Cell getCellLocal(GridPosition position) =>
-      cells.get(position) ?? const Cell.outOfBounds();
-  Cell getCell(Position position) => getCellLocal(toLocal(position));
+  Cell _getCellLocal(GridPosition position) => cells.get(position)!;
+  Cell getCell(Position position) => _getCellLocal(toLocal(position));
 
-  void setCellLocal(GridPosition position, Cell cell) =>
-      cells.set(position, cell);
-  void setCell(Position position, Cell cell) =>
-      setCellLocal(toLocal(position), cell);
-
-  Iterable<Position> traversableNeighbors(Position position) sync* {
-    var deltas = const [Delta.up(), Delta.down(), Delta.left(), Delta.right()];
-    for (var delta in deltas) {
-      var neighbor = position + delta;
-      if (isPassable(neighbor)) {
-        yield neighbor;
-      }
-    }
-  }
-
-  Iterable<Position> nearbyPositions(Position position,
-      {double radius = 1.0}) sync* {
-    for (var nearby in allPositions) {
-      var delta = nearby.deltaTo(position);
-      if (delta.magnitude <= radius) {
-        yield nearby;
-      }
-    }
-    // Include self?
-    yield position;
+  void setCell(Position position, Cell cell) {
+    cells.set(toLocal(position), cell);
   }
 
   Iterable<Position> get allPositions =>
       allGridPositions.map((position) => toGlobal(position));
   Iterable<GridPosition> get allGridPositions => cells.allPositions;
-
-  bool hasPathBetween(Position start, Position end) {
-    if (!isPassable(start)) {
-      return false;
-    }
-    final visited = {};
-    final queue = [];
-    queue.add(start);
-    while (queue.isNotEmpty) {
-      final current = queue.removeLast();
-      if (current == end) {
-        return true;
-      }
-      visited[current] = true;
-      for (var next in traversableNeighbors(current)) {
-        if (visited.containsKey(next)) {
-          continue;
-        }
-        queue.add(next);
-      }
-    }
-    return false;
-  }
 
   @override
   String toString() {
@@ -234,18 +188,10 @@ class Chunk {
     return buffer.toString();
   }
 
-  bool isRevealedLocal(GridPosition position) => mapped.get(position) ?? false;
+  bool _isRevealedLocal(GridPosition position) => mapped.get(position) ?? false;
   bool isRevealed(Position position) => mapped.get(toLocal(position)) ?? false;
-  bool isLitLocal(GridPosition position) => lit.get(position) ?? false;
+  bool _isLitLocal(GridPosition position) => lit.get(position) ?? false;
   bool isLit(Position position) => lit.get(toLocal(position)) ?? false;
-
-  Item? pickupItem(Position position) {
-    final item = itemAt(position);
-    if (item != null) {
-      items.remove(item);
-    }
-    return item;
-  }
 
   Item? itemAt(Position position) {
     for (var item in items) {
@@ -259,7 +205,7 @@ class Chunk {
   Position getItemSpawnLocation(Random random) {
     return toGlobal(_getRandomGridPositionWithCondition(size, random,
         (GridPosition position) {
-      if (!isPassableLocal(position)) {
+      if (!_isPassableLocal(position)) {
         return false;
       }
       return itemAt(toGlobal(position)) == null;
@@ -269,7 +215,7 @@ class Chunk {
   Position getEnemySpawnLocation(Random random) {
     return toGlobal(_getRandomGridPositionWithCondition(size, random,
         (GridPosition position) {
-      if (!isPassableLocal(position)) {
+      if (!_isPassableLocal(position)) {
         return false;
       }
       return enemyAt(toGlobal(position)) == null;
@@ -283,19 +229,6 @@ class Chunk {
       }
     }
     return null;
-  }
-
-  // void revealAll() {
-  //   for (var position in allGridPositions) {
-  //     mapped.set(position, true);
-  //   }
-  // }
-
-  void removeEnemy(Enemy enemy, {Item? droppedItem}) {
-    enemies.remove(enemy);
-    if (droppedItem != null && itemAt(enemy.location) == null) {
-      items.add(droppedItem);
-    }
   }
 }
 
@@ -335,10 +268,35 @@ class World {
 
   Chunk get(ChunkId id) => _map.putIfAbsent(id, () => _generateChunk(id));
 
+  Chunk _chunkAt(Position position) => get(ChunkId.fromPosition(position));
+
   Chunk _generateChunk(ChunkId chunkId) {
     // This Random is wrong, use noise or similar instead.
     final random = Random(chunkId.hashCode ^ seed);
     final cells = Grid.filled(kChunkSize, (_) => const Cell.empty());
     return Chunk(cells, chunkId, random);
+  }
+
+  bool isPassable(Position position) => _chunkAt(position).isPassable(position);
+  Enemy? enemyAt(Position position) => _chunkAt(position).enemyAt(position);
+  Cell getCell(Position position) => _chunkAt(position).getCell(position);
+  void setCell(Position position, Cell cell) =>
+      _chunkAt(position).setCell(position, cell);
+
+  Item? pickupItem(Position position) {
+    final chunk = _chunkAt(position);
+    final item = chunk.itemAt(position);
+    if (item != null) {
+      chunk.items.remove(item);
+    }
+    return item;
+  }
+
+  void removeEnemy(Enemy enemy, {Item? droppedItem}) {
+    final chunk = _chunkAt(enemy.location);
+    chunk.enemies.remove(enemy);
+    if (droppedItem != null && chunk.itemAt(enemy.location) == null) {
+      chunk.items.add(droppedItem);
+    }
   }
 }

@@ -83,9 +83,7 @@ class Enemy extends Character {
       : super(location: location, maxHealth: 1, currentHealth: 1);
 
   void update(GameState state) {
-    if (brain != null) {
-      brain!.update(state);
-    }
+    brain?.update(state);
   }
 
   Item? rollForItem(Random random) {
@@ -101,7 +99,7 @@ class Enemy extends Character {
   @override
   void hit(GameState state) {
     var item = rollForItem(state.random);
-    state.getChunk(location).removeEnemy(this, droppedItem: item);
+    state.world.removeEnemy(this, droppedItem: item);
   }
 }
 
@@ -118,10 +116,10 @@ class Wanderer extends Brain {
   Iterable<GameAction> possibleActions(GameState state) sync* {
     for (var direction in Direction.values) {
       var position = character.location + direction.delta;
-      if (!state.getChunk(position).isPassable(position)) {
+      if (!state.world.isPassable(position)) {
         continue;
       }
-      if (state.getChunk(position).enemyAt(position) != null) {
+      if (state.world.enemyAt(position) != null) {
         continue;
       }
       if (state.player.location == position) {
@@ -199,8 +197,7 @@ class InteractAction extends GameAction {
     if (mob is! Player) {
       return false;
     }
-    final targetChunk = state.world.get(ChunkId.fromPosition(target));
-    final cell = targetChunk.getCell(target);
+    final cell = state.world.getCell(target);
     return mob.carryingBlock && cell.isPassable ||
         (!mob.carryingBlock && cell.isWall);
   }
@@ -210,16 +207,15 @@ class InteractAction extends GameAction {
     final player = state.player;
     final direction = player.lastMoveDirection;
     final target = player.location + direction.delta;
-    final targetChunk = state.world.get(ChunkId.fromPosition(target));
-    final cell = targetChunk.getCell(target);
+    final cell = state.world.getCell(target);
     if (player.carryingBlock) {
       if (cell.isPassable) {
-        targetChunk.setCell(target, const Cell.wall());
+        state.world.setCell(target, const Cell.wall());
         player.carryingBlock = false;
       }
     } else {
       if (cell.isWall) {
-        targetChunk.setCell(target, const Cell.empty());
+        state.world.setCell(target, const Cell.empty());
         player.carryingBlock = true;
       }
     }
