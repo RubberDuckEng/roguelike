@@ -206,42 +206,42 @@ class _DrawingElement {
 }
 
 class Drawing {
-  final List<_DrawingElement> background;
-  final LinkedHashMap<Object, _DrawingElement> elements;
-  final List<_DrawingElement> foreground;
+  final List<_DrawingElement> _background;
+  final LinkedHashMap<Object, _DrawingElement> _elements;
+  final List<_DrawingElement> _foreground;
 
   Drawing()
-      : background = [],
-        elements = LinkedHashMap(),
-        foreground = [];
+      : _background = [],
+        _elements = LinkedHashMap(),
+        _foreground = [];
 
-  Drawing._(this.background, this.elements, this.foreground);
+  Drawing._(this._background, this._elements, this._foreground);
 
   void addBackground(Drawable drawable, Position position) {
-    background.add(_DrawingElement(drawable, position.toOffset()));
+    _background.add(_DrawingElement(drawable, position.toOffset()));
   }
 
   void add(Object key, Drawable drawable, Position position) {
-    elements[key] = _DrawingElement(drawable, position.toOffset());
+    _elements[key] = _DrawingElement(drawable, position.toOffset());
   }
 
   void addForeground(Drawable drawable, Position position) {
-    foreground.add(_DrawingElement(drawable, position.toOffset()));
+    _foreground.add(_DrawingElement(drawable, position.toOffset()));
   }
 
   void paint(DrawingContext context) {
     for (var element
-        in background.followedBy(elements.values).followedBy(foreground)) {
+        in _background.followedBy(_elements.values).followedBy(_foreground)) {
       element.paint(context);
     }
   }
 
   Drawing operator *(double operand) {
     return Drawing._(
-      background.map((value) => value * operand).toList(),
-      LinkedHashMap.fromEntries(elements.entries
+      _background.map((value) => value * operand).toList(),
+      LinkedHashMap.fromEntries(_elements.entries
           .map((MapEntry e) => MapEntry(e.key, e.value * operand))),
-      foreground.map((value) => value * operand).toList(),
+      _foreground.map((value) => value * operand).toList(),
     );
   }
 
@@ -257,17 +257,17 @@ class Drawing {
         return b * t;
       } else {
         final keys =
-            LinkedHashSet.from(a.elements.keys.followedBy(b.elements.keys));
+            LinkedHashSet.from(a._elements.keys.followedBy(b._elements.keys));
         final LinkedHashMap<Object, _DrawingElement> elements = LinkedHashMap();
         for (var key in keys) {
           _DrawingElement? element =
-              _DrawingElement.lerp(a.elements[key], b.elements[key], t);
+              _DrawingElement.lerp(a._elements[key], b._elements[key], t);
           if (element != null) {
             elements[key] = element;
           }
         }
         // TODO: Interpolate background and foreground.
-        return Drawing._(b.background, elements, b.foreground);
+        return Drawing._(b._background, elements, b._foreground);
       }
     }
   }
