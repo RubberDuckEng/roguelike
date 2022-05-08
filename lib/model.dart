@@ -56,16 +56,15 @@ GridPosition _getRandomPosition(ISize size, Random random) {
 
 abstract class Mob {
   Position location;
-  Direction lastMoveDirection;
-  bool carryingBlock;
+  Direction lastMoveDirection = Direction.up;
 
-  Mob.spawn(this.location)
-      : lastMoveDirection = Direction.up,
-        carryingBlock = false;
+  Mob.spawn(this.location);
 
   Drawable get drawable;
 
-  void draw(Drawing drawing);
+  void draw(Drawing drawing) {
+    drawing.add(this, drawable, location);
+  }
 
   void hit(GameState state) {}
 }
@@ -74,6 +73,7 @@ class Player extends Mob {
   int maxHealth = 10;
   int currentHealth = 10;
   double lightRadius = 2.5;
+  bool carryingBlock = false;
 
   Player.spawn(Position location) : super.spawn(location);
 
@@ -249,7 +249,10 @@ class InteractAction extends Action {
 
   const InteractAction({required this.target, required super.mob});
 
-  static canInteractWith(GameState state, Mob mob, Position target) {
+  static bool canInteractWith(GameState state, Mob mob, Position target) {
+    if (mob is! Player) {
+      return false;
+    }
     final targetChunk = state.world.get(ChunkId.fromPosition(target));
     final cell = targetChunk.getCell(target);
     return mob.carryingBlock && cell.isPassable ||
@@ -313,6 +316,8 @@ class Chunk {
     for (var enemy in enemies) {
       if (isLit(enemy.location)) {
         enemy.draw(drawing);
+      } else {
+        drawing.add(enemy, const InvisibleDrawable(), enemy.location);
       }
     }
 

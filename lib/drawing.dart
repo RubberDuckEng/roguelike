@@ -39,6 +39,13 @@ abstract class Drawable {
       TransformDrawable.rst(dx: offset.dx, dy: offset.dy, drawable: this);
 }
 
+class InvisibleDrawable extends Drawable {
+  const InvisibleDrawable();
+
+  @override
+  void paint(DrawingContext context, Offset offset) {}
+}
+
 class SolidDrawable extends Drawable {
   final Color color;
 
