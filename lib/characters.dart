@@ -64,17 +64,70 @@ class Player extends Character {
   }
 }
 
+class Drop {
+  final double chance;
+  final ItemFactory item;
+
+  const Drop(this.chance, this.item);
+}
+
+typedef BrainFactory = Brain Function(Enemy enemy, Random random);
+
+class EnemyDescriptor {
+  final String name;
+  final BrainFactory brain;
+  final int attackRange;
+  final int maxHealth;
+  final int aggroRadius;
+  final List<Drop> drops;
+  final Drawable drawable;
+
+  const EnemyDescriptor({
+    required this.name,
+    required this.brain,
+    required this.attackRange,
+    required this.maxHealth,
+    required this.aggroRadius,
+    required this.drops,
+    required this.drawable,
+  });
+
+  Enemy spawn(Position location, {int? seed}) {
+    final enemy = Enemy(location, this);
+    enemy.brain = brain(enemy, Random(seed));
+    return enemy;
+  }
+}
+
+class Enemies {
+  Enemies._();
+
+  static const EnemyDescriptor alien = EnemyDescriptor(
+    name: 'Alien',
+    brain: Wanderer.new,
+    maxHealth: 2,
+    attackRange: 1,
+    aggroRadius: 3,
+    drops: [
+      Drop(0.2, HealOne.new),
+      Drop(0.1, HealAll.new),
+    ],
+    drawable: OrbitAnimation(
+      CircularOrbit(radius: 0.1, period: Duration(seconds: 2)),
+      SpriteDrawable(Sprites.alienMonster),
+    ),
+  );
+}
+
 class Enemy extends Character {
+  final EnemyDescriptor descriptor;
   Brain? brain;
 
   bool get showHealthBar => currentHealth != maxHealth;
 
   @override
   Drawable get drawable => CompositeDrawable([
-        const OrbitAnimation(
-          CircularOrbit(radius: 0.1, period: Duration(seconds: 2)),
-          SpriteDrawable(Sprites.alienMonster),
-        ),
+        descriptor.drawable,
         if (showHealthBar)
           HealthBarDrawable(
             currentHealth: currentHealth,
@@ -82,19 +135,25 @@ class Enemy extends Character {
           ),
       ]);
 
-  Enemy.spawn(Position location)
-      : super(location: location, maxHealth: 2, currentHealth: 2);
+  Enemy(Position location, this.descriptor)
+      : super(
+          location: location,
+          maxHealth: descriptor.maxHealth,
+          currentHealth: descriptor.maxHealth,
+        );
 
   void update(GameState state) {
     brain?.update(state);
   }
 
   Item? rollForItem(Random random) {
-    double chance = random.nextDouble();
-    if (chance < 0.20) {
-      return HealOne(location: location);
-    } else if (chance < 0.30) {
-      return HealAll(location: location);
+    double roll = random.nextDouble();
+    double threshold = 0.0;
+    for (var drop in descriptor.drops) {
+      threshold += drop.chance;
+      if (roll < threshold) {
+        return drop.item(location: location);
+      }
     }
     return null;
   }
@@ -111,25 +170,47 @@ abstract class Brain {
 }
 
 class Wanderer extends Brain {
-  final Character character;
-  final Random _random;
+  final Enemy enemy;
+  final Random random;
 
-  Wanderer(this.character, {int? seed}) : _random = Random(seed);
+  Wanderer(this.enemy, this.random);
 
   Iterable<GameAction> possibleActions(GameState state) sync* {
-    for (var direction in Direction.values) {
-      var position = character.location + direction.delta;
+    final deltaToPlayer = enemy.location.deltaTo(state.player.location);
+    final distanceToPlayer = deltaToPlayer.manhattanDistance;
+    final descriptor = enemy.descriptor;
+    if (distanceToPlayer <= descriptor.attackRange) {
+      yield AttackAction(target: state.player.location, character: enemy);
+    }
+
+    final directions = [];
+    if (distanceToPlayer <= descriptor.aggroRadius) {
+      if (deltaToPlayer.dx < 0) {
+        directions.add(Direction.left);
+      }
+      if (deltaToPlayer.dx > 0) {
+        directions.add(Direction.right);
+      }
+      if (deltaToPlayer.dy < 0) {
+        directions.add(Direction.up);
+      }
+      if (deltaToPlayer.dy > 0) {
+        directions.add(Direction.down);
+      }
+    } else {
+      directions.addAll(Direction.values);
+    }
+
+    for (var direction in directions) {
+      var position = enemy.location + direction.delta;
       if (!state.world.isPassable(position)) {
         continue;
       }
       if (state.world.enemyAt(position) != null) {
         continue;
       }
-      if (state.player.location == position) {
-        yield AttackAction(target: position, character: character);
-      }
       yield MoveAction(
-          destination: position, direction: direction, character: character);
+          destination: position, direction: direction, character: enemy);
     }
   }
 
@@ -141,7 +222,7 @@ class Wanderer extends Brain {
     return actions.firstWhere(
       (element) => element is AttackAction,
       orElse: () {
-        final index = _random.nextInt(actions.length);
+        final index = random.nextInt(actions.length);
         return actions[index];
       },
     );

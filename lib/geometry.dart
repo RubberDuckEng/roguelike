@@ -30,7 +30,7 @@ class Delta {
   String toString() => '<Δ$dx, Δ$dy>';
 
   double get magnitude => sqrt(dx * dx + dy * dy);
-  int get walkingDistance => max(dx.abs(), dy.abs());
+  int get manhattanDistance => dx.abs() + dy.abs();
 
   @override
   bool operator ==(other) {

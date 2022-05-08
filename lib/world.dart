@@ -122,9 +122,7 @@ class Chunk {
 
   void spawnEnemies(int count, Random random) {
     for (int i = 0; i < count; ++i) {
-      final enemy = Enemy.spawn(getEnemySpawnLocation(random));
-      enemy.brain = Wanderer(enemy);
-      enemies.add(enemy);
+      enemies.add(Enemies.alien.spawn(getEnemySpawnLocation(random)));
     }
   }
 
