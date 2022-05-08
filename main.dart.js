@@ -45049,26 +45049,24 @@ A.rR.prototype={
 AV(a){return this.Rc(a)},
 Rc(a){var s=this
 return A.uQ(function(){var r=a
-var q=0,p=2,o,n,m,l,k,j,i,h,g,f,e,d,c
+var q=0,p=1,o,n,m,l,k,j,i,h,g,f,e,d,c
 return function $async$AV(b,a0){if(b===1){o=a0
 q=p}while(true)switch(q){case 0:g=s.a
 f=g.a.OL(A.d(r.a,"player").a)
 e=f.a
 d=f.b
 c=Math.abs(e)+Math.abs(d)
-q=c<=1?3:4
+q=c<=1?2:3
 break
-case 3:q=5
+case 2:q=4
 return new A.lj(A.d(r.a,"player").a,g)
-case 5:q=1
-break
-case 4:n=[]
+case 4:case 3:n=[]
 if(c<=3){if(e<0)n.push(B.dj)
 if(e>0)n.push(B.di)
 if(d<0)n.push(B.bq)
 if(d>0)n.push(B.dk)}else B.c.F(n,B.ys)
 e=n.length,d=r.b,m=0
-case 6:if(!(m<n.length)){q=8
+case 5:if(!(m<n.length)){q=7
 break}l=n[m]
 k=g.a
 j=l.ghq()
@@ -45080,16 +45078,16 @@ j/=10
 i=d.aN(0,new A.f4(B.e.bz(k),B.e.bz(j)))
 i=i.d.aN(0,i.dg(h))
 i.toString
-if(i.a!==B.ac){q=7
-break}if(d.aN(0,new A.f4(B.e.bz(k),B.e.bz(j))).mQ(h)!=null){q=7
-break}q=9
+if(i.a!==B.ac){q=6
+break}if(d.aN(0,new A.f4(B.e.bz(k),B.e.bz(j))).mQ(h)!=null){q=6
+break}q=8
 return new A.q6(l,h,g)
-case 9:case 7:n.length===e||(0,A.B)(n),++m
-q=6
+case 8:case 6:n.length===e||(0,A.B)(n),++m
+q=5
 break
-case 8:case 1:return A.tq()
-case 2:return A.tr(o)}}},t.dG)},
-Cl(a){var s=this.AV(a),r=A.ad(s,!0,A.u(s).k("n.E"))
+case 7:return A.tq()
+case 1:return A.tr(o)}}},t.dG)},
+Cl(a){var s=this.AV(a),r=A.ad(s,!0,s.$ti.k("n.E"))
 if(r.length===0)return null
 return B.c.hy(r,new A.SX(),new A.SY(this,r))}}
 A.SX.prototype={
