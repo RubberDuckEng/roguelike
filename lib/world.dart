@@ -59,17 +59,15 @@ GridPosition _getRandomPosition(ISize size, Random random) {
 
 class Chunk {
   final ChunkId chunkId;
-  final List<Enemy> enemies;
+  final List<Enemy> enemies = [];
+  final List<Item> items = [];
   final Grid<Cell> cells;
   final Grid<bool> mapped;
   final Grid<bool> lit;
-  final Grid<Item?> items;
 
   Chunk(this.cells, this.chunkId, Random random)
-      : enemies = [],
-        mapped = Grid<bool>.filled(cells.size, (_) => false),
-        lit = Grid<bool>.filled(cells.size, (_) => false),
-        items = Grid<Item?>.filled(cells.size, (_) => null) {
+      : mapped = Grid<bool>.filled(cells.size, (_) => false),
+        lit = Grid<bool>.filled(cells.size, (_) => false) {
     addManyWalls(10, random);
     spawnEnemies(2, random);
     spawnItems(random);
@@ -83,13 +81,10 @@ class Chunk {
       drawing.addBackground(SolidDrawable(color), position);
     }
 
-    for (var position in items.allPositions) {
-      final item = items.get(position);
-      if (item == null) {
-        continue;
-      }
-      drawing.add(item, item.drawable, toGlobal(position));
+    for (var item in items) {
+      item.draw(drawing);
     }
+
     for (var enemy in enemies) {
       if (isLit(enemy.location)) {
         enemy.draw(drawing);
@@ -136,17 +131,17 @@ class Chunk {
     }
   }
 
-  void spawnOneItem(Item item, Random random, {double chance = 1.0}) {
+  void spawnOneItem(ItemFactory item, Random random, {double chance = 1.0}) {
     if (random.nextDouble() < chance) {
-      setItemAt(getItemSpawnLocation(random), item);
+      items.add(item(location: getItemSpawnLocation(random)));
     }
   }
 
   void spawnItems(Random random) {
-    spawnOneItem(AreaReveal(), random, chance: 0.50);
-    spawnOneItem(HealOne(), random, chance: 0.70);
-    spawnOneItem(HealAll(), random, chance: 0.20);
-    spawnOneItem(Torch(), random, chance: 0.05);
+    spawnOneItem(AreaReveal.new, random, chance: 0.50);
+    spawnOneItem(HealOne.new, random, chance: 0.70);
+    spawnOneItem(HealAll.new, random, chance: 0.20);
+    spawnOneItem(Torch.new, random, chance: 0.05);
   }
 
   ISize get size => cells.size;
@@ -245,18 +240,21 @@ class Chunk {
   bool isLit(Position position) => lit.get(toLocal(position)) ?? false;
 
   Item? pickupItem(Position position) {
-    var item = items.get(toLocal(position));
+    final item = itemAt(position);
     if (item != null) {
-      items.set(toLocal(position), null);
+      items.remove(item);
     }
     return item;
   }
 
-  void setItemAt(Position position, Item item) =>
-      items.set(toLocal(position), item);
-
-  Item? itemAtLocal(GridPosition position) => items.get(position);
-  Item? itemAt(Position position) => items.get(toLocal(position));
+  Item? itemAt(Position position) {
+    for (var item in items) {
+      if (item.location == position) {
+        return item;
+      }
+    }
+    return null;
+  }
 
   Position getItemSpawnLocation(Random random) {
     return toGlobal(_getRandomGridPositionWithCondition(size, random,
@@ -264,7 +262,7 @@ class Chunk {
       if (!isPassableLocal(position)) {
         return false;
       }
-      return itemAtLocal(position) == null;
+      return itemAt(toGlobal(position)) == null;
     }));
   }
 
@@ -274,12 +272,7 @@ class Chunk {
       if (!isPassableLocal(position)) {
         return false;
       }
-      for (var enemy in enemies) {
-        if (enemy.location == toGlobal(position)) {
-          return false;
-        }
-      }
-      return true;
+      return enemyAt(toGlobal(position)) == null;
     }));
   }
 
@@ -301,7 +294,7 @@ class Chunk {
   void removeEnemy(Enemy enemy, {Item? droppedItem}) {
     enemies.remove(enemy);
     if (droppedItem != null && itemAt(enemy.location) == null) {
-      setItemAt(enemy.location, droppedItem);
+      items.add(droppedItem);
     }
   }
 }

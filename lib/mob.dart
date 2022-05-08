@@ -9,33 +9,48 @@ import 'sprite.dart';
 import 'items.dart';
 import 'world.dart';
 
-abstract class Mob {
-  Position location;
+abstract class Character extends Mob {
+  int maxHealth = 10;
+  int currentHealth = 10;
   Direction lastMoveDirection = Direction.up;
 
-  Mob.spawn(this.location);
-
-  Drawable get drawable;
-
-  void draw(Drawing drawing) {
-    drawing.add(this, drawable, location);
-  }
+  Character({
+    required super.location,
+    required this.maxHealth,
+    required this.currentHealth,
+  });
 
   void hit(GameState state) {}
 }
 
-class Player extends Mob {
-  int maxHealth = 10;
-  int currentHealth = 10;
+class Player extends Character {
   double lightRadius = 2.5;
   bool carryingBlock = false;
 
-  Player.spawn(Position location) : super.spawn(location);
+  Player.spawn(Position location)
+      : super(location: location, maxHealth: 10, currentHealth: 10);
 
   int get missingHealth => maxHealth - currentHealth;
 
   @override
-  Drawable get drawable => const SpriteDrawable(Sprites.ladyBug);
+  Drawable get drawable {
+    Drawable avatar = const SpriteDrawable(Sprites.ladyBug);
+
+    if (carryingBlock) {
+      final block = TransformDrawable.rst(
+        scale: 0.25,
+        dx: 0.0,
+        dy: -0.6,
+        drawable: SolidDrawable(Colors.brown.shade600),
+      );
+      avatar = CompositeDrawable([avatar, block]);
+    }
+
+    return TransformDrawable.rst(
+      rotation: lastMoveDirection.rotation,
+      drawable: avatar,
+    );
+  }
 
   void move(Delta delta) {
     location += delta;
@@ -53,37 +68,19 @@ class Player extends Mob {
   void hit(GameState state) {
     applyHealthChange(-1);
   }
-
-  @override
-  void draw(Drawing drawing) {
-    var avatar = drawable;
-
-    if (carryingBlock) {
-      final block = TransformDrawable.rst(
-        scale: 0.25,
-        dx: 0.0,
-        dy: -0.6,
-        drawable: SolidDrawable(Colors.brown.shade600),
-      );
-      avatar = CompositeDrawable([avatar, block]);
-    }
-
-    avatar = TransformDrawable.rst(
-      rotation: lastMoveDirection.rotation,
-      drawable: avatar,
-    );
-
-    drawing.add(this, avatar, location);
-  }
 }
 
-class Enemy extends Mob {
+class Enemy extends Character {
   Brain? brain;
 
   @override
-  Drawable get drawable => const SpriteDrawable(Sprites.alienMonster);
+  Drawable get drawable => const OrbitAnimation(
+        CircularOrbit(radius: 0.1, period: Duration(seconds: 2)),
+        SpriteDrawable(Sprites.alienMonster),
+      );
 
-  Enemy.spawn(Position location) : super.spawn(location);
+  Enemy.spawn(Position location)
+      : super(location: location, maxHealth: 1, currentHealth: 1);
 
   void update(GameState state) {
     if (brain != null) {
@@ -94,9 +91,9 @@ class Enemy extends Mob {
   Item? rollForItem(Random random) {
     double chance = random.nextDouble();
     if (chance < 0.20) {
-      return HealOne();
+      return HealOne(location: location);
     } else if (chance < 0.30) {
-      return HealAll();
+      return HealAll(location: location);
     }
     return null;
   }
@@ -106,16 +103,6 @@ class Enemy extends Mob {
     var item = rollForItem(state.random);
     state.getChunk(location).removeEnemy(this, droppedItem: item);
   }
-
-  @override
-  void draw(Drawing drawing) {
-    var avatar = OrbitAnimation(
-      const CircularOrbit(radius: 0.1, period: Duration(seconds: 2)),
-      drawable,
-    );
-
-    drawing.add(this, avatar, location);
-  }
 }
 
 abstract class Brain {
@@ -123,14 +110,14 @@ abstract class Brain {
 }
 
 class Wanderer extends Brain {
-  final Mob mob;
+  final Character character;
   final Random _random;
 
-  Wanderer(this.mob, {int? seed}) : _random = Random(seed);
+  Wanderer(this.character, {int? seed}) : _random = Random(seed);
 
   Iterable<GameAction> possibleActions(GameState state) sync* {
     for (var direction in Direction.values) {
-      var position = mob.location + direction.delta;
+      var position = character.location + direction.delta;
       if (!state.getChunk(position).isPassable(position)) {
         continue;
       }
@@ -138,9 +125,10 @@ class Wanderer extends Brain {
         continue;
       }
       if (state.player.location == position) {
-        yield AttackAction(target: position, mob: mob);
+        yield AttackAction(target: position, character: character);
       }
-      yield MoveAction(destination: position, direction: direction, mob: mob);
+      yield MoveAction(
+          destination: position, direction: direction, character: character);
     }
   }
 
@@ -166,9 +154,9 @@ class Wanderer extends Brain {
 }
 
 abstract class GameAction {
-  final Mob mob;
+  final Character character;
 
-  const GameAction({required this.mob});
+  const GameAction({required this.character});
 
   void execute(GameState state);
 }
@@ -177,13 +165,16 @@ class MoveAction extends GameAction {
   final Direction direction;
   final Position destination;
 
-  const MoveAction(
-      {required this.destination, required this.direction, required super.mob});
+  const MoveAction({
+    required this.destination,
+    required this.direction,
+    required super.character,
+  });
 
   @override
   void execute(GameState state) {
-    mob.location = destination;
-    mob.lastMoveDirection = direction;
+    character.location = destination;
+    character.lastMoveDirection = direction;
     // state.updateChunk();
   }
 }
@@ -191,18 +182,18 @@ class MoveAction extends GameAction {
 class AttackAction extends GameAction {
   final Position target;
 
-  const AttackAction({required this.target, required super.mob});
+  const AttackAction({required this.target, required super.character});
 
   @override
   void execute(GameState state) {
-    state.mobAt(target)?.hit(state);
+    state.characterAt(target)?.hit(state);
   }
 }
 
 class InteractAction extends GameAction {
   final Position target;
 
-  const InteractAction({required this.target, required super.mob});
+  const InteractAction({required this.target, required super.character});
 
   static bool canInteractWith(GameState state, Mob mob, Position target) {
     if (mob is! Player) {

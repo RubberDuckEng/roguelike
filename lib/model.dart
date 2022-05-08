@@ -54,7 +54,7 @@ class GameState {
       var direction = player.lastMoveDirection;
       final target = player.location + direction.delta;
       if (InteractAction.canInteractWith(this, player, target)) {
-        return InteractAction(target: target, mob: player);
+        return InteractAction(target: target, character: player);
       }
     }
 
@@ -66,19 +66,19 @@ class GameState {
     final targetChunk = world.get(ChunkId.fromPosition(target));
     final enemy = targetChunk.enemyAt(target);
     if (enemy != null) {
-      return AttackAction(target: target, mob: player);
+      return AttackAction(target: target, character: player);
     }
     if (targetChunk.isPassable(target)) {
       return MoveAction(
         destination: player.location + direction.delta,
         direction: direction,
-        mob: player,
+        character: player,
       );
     }
     return null;
   }
 
-  Mob? mobAt(Position position) {
+  Character? characterAt(Position position) {
     if (player.location == position) {
       return player;
     }
