@@ -1,57 +1,10 @@
 import 'dart:collection';
 import 'dart:math';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
 import 'geometry.dart';
 import 'sprite.dart';
-
-double _lerpDouble(double a, double b, double t) {
-  return a * (1.0 - t) + b * t;
-}
-
-class VisualPosition {
-  final double x;
-  final double y;
-
-  const VisualPosition(this.x, this.y);
-
-  VisualPosition.from(Position position)
-      : x = position.x.toDouble(),
-        y = position.y.toDouble();
-
-  @override
-  bool operator ==(other) {
-    if (other is! VisualPosition) {
-      return false;
-    }
-    return x == other.x && y == other.y;
-  }
-
-  @override
-  int get hashCode => Object.hash(x, y);
-
-  VisualPosition operator *(double operand) =>
-      VisualPosition(x * operand, y * operand);
-
-  static VisualPosition? lerp(VisualPosition? a, VisualPosition? b, double t) {
-    if (b == null) {
-      if (a == null) {
-        return null;
-      } else {
-        return a * (1.0 - t);
-      }
-    } else {
-      if (a == null) {
-        return b * t;
-      } else {
-        return VisualPosition(
-            _lerpDouble(a.x, b.x, t), _lerpDouble(a.y, b.y, t));
-      }
-    }
-  }
-}
 
 class DrawingContext {
   final Canvas canvas;
@@ -66,10 +19,10 @@ class DrawingContext {
     required this.elapsed,
   });
 
-  Offset toCanvas(VisualPosition position) {
+  Offset toCanvas(Offset position) {
     return Offset(
-      origin.dx + cellSize.width * position.x,
-      origin.dy + cellSize.height * position.y,
+      origin.dx + cellSize.width * position.dx,
+      origin.dy + cellSize.height * position.dy,
     );
   }
 }
@@ -78,6 +31,12 @@ abstract class Drawable {
   const Drawable();
 
   void paint(DrawingContext context, Offset offset);
+
+  Drawable operator *(double operand) =>
+      TransformDrawable.rst(scale: operand, drawable: this);
+
+  Drawable operator +(Offset offset) =>
+      TransformDrawable.rst(dx: offset.dx, dy: offset.dy, drawable: this);
 }
 
 class SolidDrawable extends Drawable {
@@ -208,38 +167,25 @@ class OrbitAnimation extends Drawable {
   }
 }
 
-class DrawingElement {
+class _DrawingElement {
   final Drawable drawable;
-  final VisualPosition position;
-  final double? opacity;
+  final Offset position;
 
-  const DrawingElement({
-    required this.drawable,
-    required this.position,
-    this.opacity,
-  });
-
-  factory DrawingElement.fill(Position position, Color color) {
-    return DrawingElement(
-      drawable: SolidDrawable(color),
-      position: VisualPosition.from(position),
-    );
-  }
+  const _DrawingElement(this.drawable, this.position);
 
   void paint(DrawingContext context) {
-    // TODO: Rotation and opacity.
     drawable.paint(context, context.toCanvas(position));
   }
 
-  DrawingElement operator *(double operand) {
-    return DrawingElement(
-      drawable: drawable,
-      position: position,
-      opacity: (opacity ?? 1.0) * operand,
+  _DrawingElement operator *(double operand) {
+    return _DrawingElement(
+      drawable * operand,
+      position,
     );
   }
 
-  static DrawingElement? lerp(DrawingElement? a, DrawingElement? b, double t) {
+  static _DrawingElement? lerp(
+      _DrawingElement? a, _DrawingElement? b, double t) {
     if (b == null) {
       if (a == null) {
         return null;
@@ -250,10 +196,9 @@ class DrawingElement {
       if (a == null) {
         return b * t;
       } else {
-        return DrawingElement(
-          drawable: a.drawable, // TODO: Crossfade drawables.
-          position: VisualPosition.lerp(a.position, b.position, t)!,
-          opacity: lerpDouble(a.opacity, b.opacity, t),
+        return _DrawingElement(
+          a.drawable, // TODO: Crossfade drawables.
+          Offset.lerp(a.position, b.position, t)!,
         );
       }
     }
@@ -261,9 +206,9 @@ class DrawingElement {
 }
 
 class Drawing {
-  final List<DrawingElement> background;
-  final LinkedHashMap<Object, DrawingElement> elements;
-  final List<DrawingElement> foreground;
+  final List<_DrawingElement> background;
+  final LinkedHashMap<Object, _DrawingElement> elements;
+  final List<_DrawingElement> foreground;
 
   Drawing()
       : background = [],
@@ -272,16 +217,16 @@ class Drawing {
 
   Drawing._(this.background, this.elements, this.foreground);
 
-  void addBackground(DrawingElement element) {
-    background.add(element);
+  void addBackground(Drawable drawable, Position position) {
+    background.add(_DrawingElement(drawable, position.toOffset()));
   }
 
-  void add(Object key, DrawingElement element) {
-    elements[key] = element;
+  void add(Object key, Drawable drawable, Position position) {
+    elements[key] = _DrawingElement(drawable, position.toOffset());
   }
 
-  void addForeground(DrawingElement element) {
-    foreground.add(element);
+  void addForeground(Drawable drawable, Position position) {
+    foreground.add(_DrawingElement(drawable, position.toOffset()));
   }
 
   void paint(DrawingContext context) {
@@ -313,10 +258,10 @@ class Drawing {
       } else {
         final keys =
             LinkedHashSet.from(a.elements.keys.followedBy(b.elements.keys));
-        final LinkedHashMap<Object, DrawingElement> elements = LinkedHashMap();
+        final LinkedHashMap<Object, _DrawingElement> elements = LinkedHashMap();
         for (var key in keys) {
-          DrawingElement? element =
-              DrawingElement.lerp(a.elements[key], b.elements[key], t);
+          _DrawingElement? element =
+              _DrawingElement.lerp(a.elements[key], b.elements[key], t);
           if (element != null) {
             elements[key] = element;
           }

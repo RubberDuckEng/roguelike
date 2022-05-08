@@ -118,12 +118,7 @@ class Player extends Mob {
       drawable: avatar,
     );
 
-    final element = DrawingElement(
-      drawable: avatar,
-      position: VisualPosition.from(location),
-    );
-
-    drawing.add(this, element);
+    drawing.add(this, avatar, location);
   }
 }
 
@@ -164,12 +159,7 @@ class Enemy extends Mob {
       drawable,
     );
 
-    final element = DrawingElement(
-      drawable: avatar,
-      position: VisualPosition.from(location),
-    );
-
-    drawing.add(this, element);
+    drawing.add(this, avatar, location);
   }
 }
 
@@ -310,7 +300,7 @@ class Chunk {
     for (var position in allPositions) {
       final color =
           isPassable(position) ? Colors.brown.shade300 : Colors.brown.shade600;
-      drawing.addBackground(DrawingElement.fill(position, color));
+      drawing.addBackground(SolidDrawable(color), position);
     }
 
     for (var position in items.allPositions) {
@@ -318,11 +308,7 @@ class Chunk {
       if (item == null) {
         continue;
       }
-      final element = DrawingElement(
-        drawable: item.drawable,
-        position: VisualPosition.from(toGlobal(position)),
-      );
-      drawing.add(item, element);
+      drawing.add(item, item.drawable, toGlobal(position));
     }
     for (var enemy in enemies) {
       if (isLit(enemy.location)) {
@@ -333,15 +319,15 @@ class Chunk {
     for (var position in allPositions) {
       final isRevealed = this.isRevealed(position);
       if (!isRevealed) {
-        drawing.addForeground(DrawingElement.fill(position, Colors.black));
+        drawing.addForeground(const SolidDrawable(Colors.black), position);
       } else {
         // Don't paint fog over walls to avoid changing their color.
         final isWall = getCell(position).type == CellType.wall;
         if (!isWall) {
           final isLit = this.isLit(position);
           if (!isLit) {
-            drawing
-                .addForeground(DrawingElement.fill(position, Colors.black38));
+            drawing.addForeground(
+                const SolidDrawable(Colors.black38), position);
           }
         }
       }
