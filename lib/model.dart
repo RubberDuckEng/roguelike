@@ -385,6 +385,8 @@ class Chunk {
         position.y + chunkId.y * kChunkSize.height);
   }
 
+  Rect get bounds => toGlobal(GridPosition.zero).toOffset() & size.toSize();
+
   Cell getCellLocal(GridPosition position) =>
       cells.get(position) ?? const Cell.outOfBounds();
   Cell getCell(Position position) => getCellLocal(toLocal(position));
@@ -609,7 +611,7 @@ class GameState {
     int? seed,
   })  : world = World(seed: seed),
         random = Random(seed) {
-    player = Player.spawn(const Position.zero());
+    player = Player.spawn(Position.zero);
     updateVisibility();
   }
 

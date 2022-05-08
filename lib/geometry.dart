@@ -52,9 +52,7 @@ class Position {
 
   const Position(this.x, this.y);
 
-  const Position.zero()
-      : x = 0,
-        y = 0;
+  static const zero = Position(0, 0);
 
   Delta deltaTo(Position other) {
     return Delta(other.x - x, other.y - y);
@@ -94,6 +92,8 @@ class ISize {
   final int height;
 
   const ISize(this.width, this.height);
+
+  Size toSize() => Size(width.toDouble(), height.toDouble());
 }
 
 class IRect {

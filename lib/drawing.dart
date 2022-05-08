@@ -197,7 +197,7 @@ class _DrawingElement {
         return b * t;
       } else {
         return _DrawingElement(
-          a.drawable, // TODO: Crossfade drawables.
+          b.drawable, // TODO: Crossfade drawables.
           Offset.lerp(a.position, b.position, t)!,
         );
       }
@@ -273,8 +273,8 @@ class Drawing {
   }
 }
 
-class DrawingFrameTween extends Tween<Drawing?> {
-  DrawingFrameTween({super.begin, super.end});
+class DrawingTween extends Tween<Drawing?> {
+  DrawingTween({super.begin, super.end});
 
   @override
   Drawing? lerp(double t) => Drawing.lerp(begin, end, t);

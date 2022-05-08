@@ -8,21 +8,44 @@ import 'model.dart';
 class GameController extends ChangeNotifier {
   GameState state = GameState.demo();
 
-  late Drawing drawing;
-  late Rect window;
+  Drawing get drawing => _drawing.value!;
+  Rect get window => _window.value!;
   Duration elapsed = const Duration();
 
-  late Ticker _ticker;
+  late Ticker _idleTicker;
+  late AnimationController _turnAnimationController;
+
+  final DrawingTween _drawingTween = DrawingTween();
+  late Animation<Drawing?> _drawing;
+
+  final RectTween _windowTween = RectTween();
+  late Animation<Rect?> _window;
 
   GameController(TickerProvider vsync) {
-    _ticker = vsync.createTicker(_tick);
-    _updateDrawing();
-    _ticker.start();
+    _idleTicker = vsync.createTicker(_tick)..start();
+    _turnAnimationController = AnimationController(
+      vsync: vsync,
+      duration: const Duration(milliseconds: 200),
+      debugLabel: 'Turn',
+    );
+
+    final initialDrawing = _draw();
+    _drawingTween
+      ..begin = initialDrawing
+      ..end = initialDrawing;
+    _drawing = _drawingTween.animate(_turnAnimationController);
+
+    final initialWindow = _getWindow();
+    _windowTween
+      ..begin = initialWindow
+      ..end = initialWindow;
+    _window = _windowTween.animate(_turnAnimationController);
   }
 
   @override
   void dispose() {
-    _ticker.dispose();
+    _idleTicker.dispose();
+    _turnAnimationController.dispose();
     super.dispose();
   }
 
@@ -47,14 +70,28 @@ class GameController extends ChangeNotifier {
     return null;
   }
 
-  void _updateDrawing() {
-    drawing = Drawing();
+  Drawing _draw() {
+    final drawing = Drawing();
     state.draw(drawing);
-    window = Rect.fromCenter(
-      center: state.player.location.toOffset(),
-      width: kChunkSize.width.toDouble(),
-      height: kChunkSize.height.toDouble(),
-    );
+    return drawing;
+  }
+
+  Rect _getWindow() => state.visibleChunk.bounds.inflate(5.0);
+
+  void _update() {
+    _drawingTween
+      ..begin = drawing
+      ..end = _draw();
+    _windowTween
+      ..begin = window
+      ..end = _getWindow();
+
+    _turnAnimationController
+      ..stop()
+      ..value = 0.0
+      ..forward();
+
+    notifyListeners();
   }
 
   void handleKeyEvent(RawKeyDownEvent event) {
@@ -67,14 +104,12 @@ class GameController extends ChangeNotifier {
       playerAction.execute(state);
     }
     state.nextTurn();
-    _updateDrawing();
-    notifyListeners();
+    _update();
   }
 
   void newGame() {
     state = GameState.demo();
-    _updateDrawing();
-    notifyListeners();
+    _update();
   }
 }
 
@@ -261,7 +296,7 @@ class GamePage extends StatefulWidget {
 }
 
 class _GamePageState extends State<GamePage>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin<GamePage> {
   final focusNode = FocusNode();
   late GameController controller;
 
