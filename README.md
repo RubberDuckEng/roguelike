@@ -91,3 +91,43 @@ Emotionally
 * Game where you are a hand and you could punish or reward the cat for what it did.  You could reward or punish.
 * At the end, should be teming with life.
 * At the beginning you are an ameoma.  Later you're a cat.  But still amoba level things shoudl still happen.
+
+## Terrain ideas
+* Only passible with certain items (e.g. deep water)
+* Takes more turns to pass (e.g. shallow water)
+* Does damage through passing (e.g. fire)
+* Disables or removes certain items when passing.
+* Traps
+* Single movement direction allowed (conveyer belts?)
+* Accelerates movement
+
+## Passive Item Ideas
+* Gold
+* Things which change avatar (clothing, wigs, dye, etc.)
+* Passive Damage reduction (armor)
+* Temporary damage reduction (sheild)
+* Weapon types (just drop current when picking up new)
+* AOE Weapons
+* Ranged Weapons
+* Use-limited weapons
+* Throwable weapons (have to go pick them up after)
+* Weapons with different attack areas
+* Health capacity increase (Heart Containers)
+* Something heals you on hit
+* Something which does extra damage
+* Passive Healing regen
+* Changes light radius
+* Stealth
+* Invulnerability
+* Walk through walls
+* Damages nearby enemies passively
+* Tools (for affecting blocks)
+* Movement items (make you go faster, be able to pass traps w/o triggering, etc.)
+
+
+## Active Item ideas
+* Bomb (will need a fuse)
+* Active healing
+* Wands
+* Clear all enemies
+* 
