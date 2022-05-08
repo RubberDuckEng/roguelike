@@ -2,12 +2,9 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart' hide TextStyle;
 
-import 'drawing.dart';
-
-abstract class Sprite extends Drawable {
+abstract class Sprite {
   const Sprite();
 
-  @override
   void paint(Canvas canvas, Rect rect);
 }
 

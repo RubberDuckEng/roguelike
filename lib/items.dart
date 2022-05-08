@@ -15,7 +15,7 @@ class AreaReveal extends Item {
   }
 
   @override
-  Drawable get drawable => Sprites.firework;
+  Drawable get drawable => const SpriteDrawable(Sprites.firework);
 }
 
 class HealOne extends Item {
@@ -25,7 +25,7 @@ class HealOne extends Item {
   }
 
   @override
-  Drawable get drawable => Sprites.heart;
+  Drawable get drawable => const SpriteDrawable(Sprites.heart);
 }
 
 class HealAll extends Item {
@@ -35,7 +35,7 @@ class HealAll extends Item {
   }
 
   @override
-  Drawable get drawable => Sprites.sparkleHeart;
+  Drawable get drawable => const SpriteDrawable(Sprites.sparkleHeart);
 }
 
 class Torch extends Item {
@@ -45,5 +45,5 @@ class Torch extends Item {
   }
 
   @override
-  Drawable get drawable => Sprites.torch;
+  Drawable get drawable => const SpriteDrawable(Sprites.torch);
 }

@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import 'geometry.dart';
+import 'sprite.dart';
 
 double _lerpDouble(double a, double b, double t) {
   return a * (1.0 - t) + b * t;
@@ -51,26 +52,6 @@ class VisualPosition {
   }
 }
 
-abstract class Drawable {
-  const Drawable();
-
-  void paint(Canvas canvas, Rect rect);
-}
-
-class SolidColor extends Drawable {
-  final Color color;
-
-  const SolidColor(this.color);
-
-  @override
-  void paint(Canvas canvas, Rect rect) {
-    final paint = Paint()
-      ..isAntiAlias = false
-      ..color = color;
-    canvas.drawRect(rect, paint);
-  }
-}
-
 class DrawingContext {
   final Canvas canvas;
   final Offset origin;
@@ -88,44 +69,126 @@ class DrawingContext {
       origin.dy + cellSize.height * position.y,
     );
   }
+}
 
-  Rect toCellRect(VisualPosition position) => toCanvas(position) & cellSize;
+abstract class Drawable {
+  const Drawable();
 
-  void paintDrawable(Drawable drawable, VisualPosition position) {
-    drawable.paint(canvas, toCellRect(position));
+  void paint(DrawingContext context, Offset offset);
+}
+
+class SolidDrawable extends Drawable {
+  final Color color;
+
+  const SolidDrawable(this.color);
+
+  @override
+  void paint(DrawingContext context, Offset offset) {
+    final paint = Paint()
+      ..isAntiAlias = false
+      ..color = color;
+    context.canvas.drawRect(offset & context.cellSize, paint);
+  }
+}
+
+class SpriteDrawable extends Drawable {
+  final Sprite sprite;
+
+  const SpriteDrawable(this.sprite);
+
+  @override
+  void paint(DrawingContext context, Offset offset) {
+    sprite.paint(context.canvas, offset & context.cellSize);
+  }
+}
+
+class CompositeDrawable extends Drawable {
+  final List<Drawable> drawables;
+
+  const CompositeDrawable(this.drawables);
+
+  @override
+  void paint(DrawingContext context, Offset offset) {
+    for (var drawable in drawables) {
+      drawable.paint(context, offset);
+    }
+  }
+}
+
+class TransformDrawable extends Drawable {
+  final Matrix4 matrix;
+  final Drawable drawable;
+
+  const TransformDrawable(this.matrix, this.drawable);
+
+  factory TransformDrawable.rst({
+    double rotation = 0.0,
+    double scale = 1.0,
+    double anchorX = 0.0,
+    double anchorY = 0.0,
+    double dx = 0.0,
+    double dy = 0.0,
+    required Drawable drawable,
+  }) {
+    final transform = RSTransform.fromComponents(
+      rotation: rotation,
+      scale: scale,
+      anchorX: anchorX,
+      anchorY: anchorY,
+      translateX: dx,
+      translateY: dy,
+    );
+    return TransformDrawable(
+      Matrix4(
+        transform.scos, transform.ssin, 0, 0, //
+        -transform.ssin, transform.scos, 0, 0, //
+        0, 0, 0, 0, //
+        transform.tx, transform.ty, 0, 1, //
+      ),
+      drawable,
+    );
+  }
+
+  @override
+  void paint(DrawingContext context, Offset offset) {
+    final canvas = context.canvas;
+    canvas.save();
+    canvas.translate(offset.dx, offset.dy);
+    canvas.scale(context.cellSize.width, context.cellSize.height);
+    canvas.transform(matrix.storage);
+    canvas.scale(1 / context.cellSize.width, 1 / context.cellSize.height);
+    drawable.paint(context, Offset.zero);
+    canvas.restore();
   }
 }
 
 class DrawingElement {
   final Drawable drawable;
   final VisualPosition position;
-  final double? rotation;
   final double? opacity;
 
   const DrawingElement({
     required this.drawable,
     required this.position,
-    this.rotation,
     this.opacity,
   });
 
   factory DrawingElement.fill(Position position, Color color) {
     return DrawingElement(
-      drawable: SolidColor(color),
+      drawable: SolidDrawable(color),
       position: VisualPosition.from(position),
     );
   }
 
   void paint(DrawingContext context) {
     // TODO: Rotation and opacity.
-    context.paintDrawable(drawable, position);
+    drawable.paint(context, context.toCanvas(position));
   }
 
   DrawingElement operator *(double operand) {
     return DrawingElement(
       drawable: drawable,
       position: position,
-      rotation: rotation,
       opacity: (opacity ?? 1.0) * operand,
     );
   }
@@ -144,8 +207,6 @@ class DrawingElement {
         return DrawingElement(
           drawable: a.drawable, // TODO: Crossfade drawables.
           position: VisualPosition.lerp(a.position, b.position, t)!,
-          rotation:
-              lerpDouble(a.rotation, b.rotation, t), // TODO: Needs quaterions.
           opacity: lerpDouble(a.opacity, b.opacity, t),
         );
       }

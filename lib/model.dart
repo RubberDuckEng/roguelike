@@ -66,17 +66,26 @@ abstract class Mob {
   Drawable get drawable;
 
   void draw(Drawing drawing) {
-    final element = DrawingElement(
-      drawable: drawable,
-      position: VisualPosition.from(location),
-    );
-    drawing.add(this, element);
+    var avatar = drawable;
 
     if (carryingBlock) {
-      // TODO: Carried block.
-      // painter.paintCarriedBlock(chunk.toLocal(mob.location),
-      //     Colors.brown.shade600, mob.lastMoveDirection);
+      final block = TransformDrawable.rst(
+        scale: 0.25,
+        anchorX: 0.5,
+        anchorY: 0.5,
+        dx: 0.5,
+        dy: -0.1,
+        drawable: SolidDrawable(Colors.brown.shade600),
+      );
+      avatar = CompositeDrawable([avatar, block]);
     }
+
+    final element = DrawingElement(
+      drawable: avatar,
+      position: VisualPosition.from(location),
+    );
+
+    drawing.add(this, element);
   }
 
   void hit(GameState state) {}
@@ -92,7 +101,7 @@ class Player extends Mob {
   int get missingHealth => maxHealth - currentHealth;
 
   @override
-  Drawable get drawable => Sprites.ladyBug;
+  Drawable get drawable => const SpriteDrawable(Sprites.ladyBug);
 
   void move(Delta delta) {
     location += delta;
@@ -116,7 +125,7 @@ class Enemy extends Mob {
   Brain? brain;
 
   @override
-  Drawable get drawable => Sprites.alienMonster;
+  Drawable get drawable => const SpriteDrawable(Sprites.alienMonster);
 
   Enemy.spawn(Position location) : super.spawn(location);
 
@@ -559,6 +568,19 @@ enum Direction {
   final Delta delta;
 
   const Direction(this.delta);
+
+  double get rotation {
+    switch (this) {
+      case Direction.up:
+        return 0.0;
+      case Direction.down:
+        return pi;
+      case Direction.left:
+        return -pi / 2;
+      case Direction.right:
+        return pi / 2;
+    }
+  }
 }
 
 const ISize kChunkSize = ISize(10, 10);
