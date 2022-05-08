@@ -71,14 +71,17 @@ abstract class Mob {
     if (carryingBlock) {
       final block = TransformDrawable.rst(
         scale: 0.25,
-        anchorX: 0.5,
-        anchorY: 0.5,
-        dx: 0.5,
-        dy: -0.1,
+        dx: 0.0,
+        dy: -0.6,
         drawable: SolidDrawable(Colors.brown.shade600),
       );
       avatar = CompositeDrawable([avatar, block]);
     }
+
+    avatar = TransformDrawable.rst(
+      rotation: lastMoveDirection.rotation,
+      drawable: avatar,
+    );
 
     final element = DrawingElement(
       drawable: avatar,

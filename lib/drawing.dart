@@ -138,13 +138,17 @@ class TransformDrawable extends Drawable {
       translateX: dx,
       translateY: dy,
     );
-    return TransformDrawable(
-      Matrix4(
+    final matrix = Matrix4.identity()
+      ..translate(0.5, 0.5)
+      ..multiply(Matrix4(
         transform.scos, transform.ssin, 0, 0, //
         -transform.ssin, transform.scos, 0, 0, //
         0, 0, 0, 0, //
         transform.tx, transform.ty, 0, 1, //
-      ),
+      ))
+      ..translate(-0.5, -0.5);
+    return TransformDrawable(
+      matrix,
       drawable,
     );
   }
@@ -152,11 +156,14 @@ class TransformDrawable extends Drawable {
   @override
   void paint(DrawingContext context, Offset offset) {
     final canvas = context.canvas;
+    final cellSize = context.cellSize;
+    final transform = Matrix4.identity()
+      ..translate(offset.dx, offset.dy)
+      ..scale(cellSize.width, cellSize.height)
+      ..multiply(matrix)
+      ..scale(1.0 / cellSize.width, 1.0 / cellSize.height);
     canvas.save();
-    canvas.translate(offset.dx, offset.dy);
-    canvas.scale(context.cellSize.width, context.cellSize.height);
-    canvas.transform(matrix.storage);
-    canvas.scale(1 / context.cellSize.width, 1 / context.cellSize.height);
+    canvas.transform(transform.storage);
     drawable.paint(context, Offset.zero);
     canvas.restore();
   }
