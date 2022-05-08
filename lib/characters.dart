@@ -181,7 +181,6 @@ class Wanderer extends Brain {
     final descriptor = enemy.descriptor;
     if (distanceToPlayer <= descriptor.attackRange) {
       yield AttackAction(target: state.player.location, character: enemy);
-      return;
     }
 
     final directions = [];
