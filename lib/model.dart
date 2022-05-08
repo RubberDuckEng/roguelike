@@ -32,16 +32,17 @@ class GameState {
   Chunk getChunk(Position position) =>
       world.get(ChunkId.fromPosition(position));
 
-  Grid<Chunk> get activeChunks {
-    var offset = Delta(focusedChunk.chunkId.x - 1, focusedChunk.chunkId.y - 1);
-    return Grid.filled(
-        const ISize(3, 3),
-        (position) =>
-            world.get(ChunkId(offset.dx + position.x, offset.dy + position.y)));
+  Iterable<Chunk> get activeChunks sync* {
+    final chunkId = ChunkId.fromPosition(player.location);
+    for (int dx = -1; dx <= 1; dx++) {
+      for (int dy = -1; dy <= 1; dy++) {
+        yield world.get(ChunkId(chunkId.x + dx, chunkId.y + dy));
+      }
+    }
   }
 
   void draw(Drawing drawing) {
-    for (var chunk in activeChunks.cells) {
+    for (var chunk in activeChunks) {
       chunk.draw(drawing);
     }
     player.draw(drawing);
@@ -114,7 +115,7 @@ class GameState {
   }
 
   void nextTurn() {
-    for (var chunk in activeChunks.cells) {
+    for (var chunk in activeChunks) {
       chunk.update(this);
     }
     var item = world.pickupItem(player.location);
