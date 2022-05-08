@@ -110,6 +110,30 @@ class IRect {
   });
 }
 
+enum Direction {
+  up(Delta.up()),
+  down(Delta.down()),
+  left(Delta.left()),
+  right(Delta.right());
+
+  final Delta delta;
+
+  const Direction(this.delta);
+
+  double get rotation {
+    switch (this) {
+      case Direction.up:
+        return 0.0;
+      case Direction.down:
+        return pi;
+      case Direction.left:
+        return -pi / 2;
+      case Direction.right:
+        return pi / 2;
+    }
+  }
+}
+
 class GridPosition {
   final int x;
   final int y;

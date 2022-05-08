@@ -1,7 +1,9 @@
 import 'dart:collection';
 import 'dart:math';
+import 'dart:ui';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/animation.dart';
+import 'package:vector_math/vector_math_64.dart';
 
 import 'geometry.dart';
 import 'sprite.dart';
