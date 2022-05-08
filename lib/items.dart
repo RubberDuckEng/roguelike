@@ -1,7 +1,7 @@
 import 'drawing.dart';
+import 'geometry.dart';
 import 'model.dart';
 import 'sprite.dart';
-import 'geometry.dart';
 
 abstract class Mob {
   Position location;

@@ -1,9 +1,9 @@
 import 'dart:math';
 
+import 'characters.dart';
 import 'drawing.dart';
 import 'geometry.dart';
 import 'grid.dart';
-import 'mob.dart';
 import 'world.dart';
 
 class LogicalEvent {

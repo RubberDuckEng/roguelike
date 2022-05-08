@@ -2,11 +2,11 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-import 'geometry.dart';
-import 'model.dart';
 import 'drawing.dart';
-import 'sprite.dart';
+import 'geometry.dart';
 import 'items.dart';
+import 'model.dart';
+import 'sprite.dart';
 import 'world.dart';
 
 abstract class Character extends Mob {

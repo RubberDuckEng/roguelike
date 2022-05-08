@@ -2,11 +2,11 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-import 'geometry.dart';
-import 'mob.dart';
+import 'characters.dart';
 import 'drawing.dart';
-import 'items.dart';
+import 'geometry.dart';
 import 'grid.dart';
+import 'items.dart';
 
 const ISize kChunkSize = ISize(10, 10);
 
