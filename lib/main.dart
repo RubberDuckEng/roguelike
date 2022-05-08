@@ -1,49 +1,93 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:roguelike/geometry.dart';
 
 import 'drawing.dart';
 import 'model.dart';
-import 'painting.dart';
+
+class GameController extends ChangeNotifier {
+  GameState state = GameState.demo();
+
+  late Drawing drawing;
+  late Rect window;
+
+  GameController() {
+    _updateDrawing();
+  }
+
+  LogicalEvent? _logicalEventFor(RawKeyDownEvent event) {
+    if (event.logicalKey == LogicalKeyboardKey.space) {
+      return LogicalEvent.interact();
+    }
+    if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+      return LogicalEvent.move(Direction.left);
+    } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+      return LogicalEvent.move(Direction.right);
+    } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+      return LogicalEvent.move(Direction.up);
+    } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+      return LogicalEvent.move(Direction.down);
+    }
+    return null;
+  }
+
+  void _updateDrawing() {
+    drawing = Drawing();
+    state.draw(drawing);
+    window = Rect.fromCenter(
+      center: state.player.location.toOffset(),
+      width: kChunkSize.width.toDouble(),
+      height: kChunkSize.height.toDouble(),
+    );
+  }
+
+  void handleKeyEvent(RawKeyDownEvent event) {
+    var logical = _logicalEventFor(event);
+    if (logical == null) {
+      return;
+    }
+    var playerAction = state.actionFor(state.player, logical);
+    if (playerAction != null) {
+      playerAction.execute(state);
+    }
+    state.nextTurn();
+    _updateDrawing();
+    notifyListeners();
+  }
+
+  void newGame() {
+    state = GameState.demo();
+    _updateDrawing();
+    notifyListeners();
+  }
+}
 
 class WorldPainter extends CustomPainter {
-  final GameState gameState;
+  final GameController controller;
 
-  WorldPainter(this.gameState);
+  WorldPainter(this.controller) : super(repaint: controller);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final drawing = Drawing();
-    gameState.draw(drawing);
-
-    // TODO: This approach is backwards. We should be given a rectangle in
-    // world coordinates to display in this given size instead of always
-    // squeezing in a 3x3 grid of chunks.
-    var chunks = gameState.nearbyChunks;
-    final chunkSize =
-        Size(size.width / chunks.width, size.height / chunks.height);
+    final window = controller.window;
     final cellSize = Size(
-      chunkSize.width / kChunkSize.width,
-      chunkSize.height / kChunkSize.height,
+      size.width / window.width,
+      size.height / window.height,
     );
-    final zeroPosition =
-        chunks.get(GridPosition.zero)!.toGlobal(GridPosition.zero);
-    final origin = Offset(
-      -zeroPosition.x.toDouble() * cellSize.width,
-      -zeroPosition.y.toDouble() * cellSize.height,
-    );
+    final topLeft = window.topLeft;
     final context = DrawingContext(
       canvas: canvas,
-      origin: origin,
+      origin: Offset(
+        -topLeft.dx * cellSize.width,
+        -topLeft.dy * cellSize.height,
+      ),
       cellSize: cellSize,
     );
-
-    drawing.paint(context);
+    controller.drawing.paint(context);
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return true;
+    return false;
   }
 }
 
@@ -149,10 +193,11 @@ class _MenuOverlayState extends State<MenuOverlay> {
   }
 }
 
-class WorldView extends StatelessWidget {
-  final GameState gameState;
+class GameView extends AnimatedWidget {
+  final GameController controller;
 
-  const WorldView({Key? key, required this.gameState}) : super(key: key);
+  const GameView({super.key, required this.controller})
+      : super(listenable: controller);
 
   @override
   Widget build(BuildContext context) {
@@ -160,13 +205,13 @@ class WorldView extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         CustomPaint(
-          painter: WorldPainter(gameState),
+          painter: WorldPainter(controller),
         ),
         Align(
           alignment: Alignment.bottomRight,
-          child: HeadsUpDisplay(gameState: gameState),
+          child: HeadsUpDisplay(gameState: controller.state),
         ),
-        if (gameState.playerDead) const MenuOverlay(),
+        if (controller.state.playerDead) const MenuOverlay(),
       ],
     );
   }
@@ -196,51 +241,9 @@ class GamePage extends StatefulWidget {
   State<GamePage> createState() => _GamePageState();
 }
 
-LogicalEvent? logicalEventFor(RawKeyDownEvent event) {
-  if (event.logicalKey == LogicalKeyboardKey.space) {
-    return LogicalEvent.interact();
-  }
-  if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-    return LogicalEvent.move(Direction.left);
-  } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-    return LogicalEvent.move(Direction.right);
-  } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-    return LogicalEvent.move(Direction.up);
-  } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-    return LogicalEvent.move(Direction.down);
-  }
-  return null;
-}
-
 class _GamePageState extends State<GamePage> {
   final focusNode = FocusNode();
-  late GameState gameState;
-
-  @override
-  void initState() {
-    newGame();
-    super.initState();
-  }
-
-  void newGame() {
-    setState(() {
-      gameState = GameState.demo();
-    });
-  }
-
-  void handleGameKeyEvent(RawKeyDownEvent event) {
-    var logical = logicalEventFor(event);
-    if (logical == null) {
-      return;
-    }
-    var playerAction = gameState.actionFor(gameState.player, logical);
-    setState(() {
-      if (playerAction != null) {
-        playerAction.execute(gameState);
-      }
-      gameState.nextTurn();
-    });
-  }
+  final GameController controller = GameController();
 
   @override
   Widget build(BuildContext context) {
@@ -254,15 +257,15 @@ class _GamePageState extends State<GamePage> {
             focusNode: focusNode,
             onKey: (event) {
               if (event is RawKeyDownEvent) {
-                if (!gameState.playerDead) {
-                  handleGameKeyEvent(event);
+                if (!controller.state.playerDead) {
+                  controller.handleKeyEvent(event);
                 } else if (event.isKeyPressed(LogicalKeyboardKey.space)) {
-                  newGame();
+                  controller.newGame();
                 }
               }
             },
-            child: WorldView(
-              gameState: gameState,
+            child: GameView(
+              controller: controller,
             ),
           ),
         ),

@@ -60,6 +60,8 @@ class Position {
     return Delta(other.x - x, other.y - y);
   }
 
+  Offset toOffset() => Offset(x.toDouble(), y.toDouble());
+
   @override
   String toString() => '($x, $y)';
 
