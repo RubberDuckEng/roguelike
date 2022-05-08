@@ -19,7 +19,7 @@ class GameState {
   final World world;
   final Random random;
 
-  GameState.demo({
+  GameState({
     int? seed,
   })  : world = World(seed: seed),
         random = Random(seed) {
@@ -81,7 +81,7 @@ class GameState {
     if (player.location == position) {
       return player;
     }
-    return getChunk(position).enemyAt(position);
+    return world.enemyAt(position);
   }
 
   void revealAround(Position position, double radius) {

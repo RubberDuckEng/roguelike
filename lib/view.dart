@@ -7,7 +7,7 @@ import 'geometry.dart';
 import 'model.dart';
 
 class GameController extends ChangeNotifier {
-  GameState state = GameState.demo();
+  GameState state = GameState();
 
   Drawing get drawing => _drawing.value!;
   Rect get window => _window.value!;
@@ -109,7 +109,7 @@ class GameController extends ChangeNotifier {
   }
 
   void newGame() {
-    state = GameState.demo();
+    state = GameState();
     _update();
   }
 }

@@ -173,7 +173,6 @@ class MoveAction extends GameAction {
   void execute(GameState state) {
     character.location = destination;
     character.lastMoveDirection = direction;
-    // state.updateChunk();
   }
 }
 
