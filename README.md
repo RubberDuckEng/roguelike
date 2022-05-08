@@ -55,7 +55,7 @@
 * Want to be able to link to the built world.
 * 
 
-2d minecraft meets factorio meets zelda?
+k meets factorio meets zelda?
 
 ## MVP notes
 * Travel between rooms (zelda style)
@@ -81,3 +81,13 @@ Things to do
 * Sprite walking?
 * Moving between
 * Flicker animations?
+
+
+Emotionally
+* Earth right after crust has cooled
+* End of the game, cities, oceans, reached the modern world.
+* As you progres through the game, you become "lifeform level X" which operates at greater scale.
+* Whatever you did at Lifeform level x-1, the NPCs should do for you.
+* Game where you are a hand and you could punish or reward the cat for what it did.  You could reward or punish.
+* At the end, should be teming with life.
+* At the beginning you are an ameoma.  Later you're a cat.  But still amoba level things shoudl still happen.
