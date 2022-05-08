@@ -223,14 +223,9 @@ class HeadsUpDisplay extends StatelessWidget {
   }
 }
 
-class MenuOverlay extends StatefulWidget {
-  const MenuOverlay({Key? key}) : super(key: key);
+class MenuOverlay extends StatelessWidget {
+  const MenuOverlay({super.key});
 
-  @override
-  State<MenuOverlay> createState() => _MenuOverlayState();
-}
-
-class _MenuOverlayState extends State<MenuOverlay> {
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -272,11 +267,11 @@ class GameView extends AnimatedWidget {
 }
 
 void main() {
-  runApp(const MyApp());
+  runApp(const GameApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+class GameApp extends StatelessWidget {
+  const GameApp({super.key});
 
   @override
   Widget build(BuildContext context) {
