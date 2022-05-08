@@ -38,20 +38,7 @@ class WorldPainter extends CustomPainter {
       cellSize: cellSize,
     );
 
-    final chunkPainters = <ChunkPainter>[];
-    for (var position in chunks.allPositions) {
-      chunkPainters.add(ChunkPainter(context, chunks.get(position)!));
-    }
-
-    for (var painter in chunkPainters) {
-      painter.paintBackground();
-    }
-
     drawing.paint(context);
-
-    for (var painter in chunkPainters) {
-      painter.paintForeground();
-    }
   }
 
   @override

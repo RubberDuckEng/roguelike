@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -56,6 +57,20 @@ abstract class Drawable {
   void paint(Canvas canvas, Rect rect);
 }
 
+class SolidColor extends Drawable {
+  final Color color;
+
+  const SolidColor(this.color);
+
+  @override
+  void paint(Canvas canvas, Rect rect) {
+    final paint = Paint()
+      ..isAntiAlias = false
+      ..color = color;
+    canvas.drawRect(rect, paint);
+  }
+}
+
 class DrawingContext {
   final Canvas canvas;
   final Offset origin;
@@ -87,12 +102,19 @@ class DrawingElement {
   final double? rotation;
   final double? opacity;
 
-  DrawingElement({
+  const DrawingElement({
     required this.drawable,
     required this.position,
     this.rotation,
     this.opacity,
   });
+
+  factory DrawingElement.fill(Position position, Color color) {
+    return DrawingElement(
+      drawable: SolidColor(color),
+      position: VisualPosition.from(position),
+    );
+  }
 
   void paint(DrawingContext context) {
     // TODO: Rotation and opacity.
@@ -132,25 +154,43 @@ class DrawingElement {
 }
 
 class Drawing {
-  final Map<Object, DrawingElement> elements;
+  final List<DrawingElement> background;
+  final LinkedHashMap<Object, DrawingElement> elements;
+  final List<DrawingElement> foreground;
 
-  Drawing() : elements = {};
+  Drawing()
+      : background = [],
+        elements = LinkedHashMap(),
+        foreground = [];
 
-  Drawing._(this.elements);
+  Drawing._(this.background, this.elements, this.foreground);
+
+  void addBackground(DrawingElement element) {
+    background.add(element);
+  }
 
   void add(Object key, DrawingElement element) {
     elements[key] = element;
   }
 
+  void addForeground(DrawingElement element) {
+    foreground.add(element);
+  }
+
   void paint(DrawingContext context) {
-    for (var element in elements.values) {
+    for (var element
+        in background.followedBy(elements.values).followedBy(foreground)) {
       element.paint(context);
     }
   }
 
   Drawing operator *(double operand) {
     return Drawing._(
-        elements.map((key, value) => MapEntry(key, value * operand)));
+      background.map((value) => value * operand).toList(),
+      LinkedHashMap.fromEntries(elements.entries
+          .map((MapEntry e) => MapEntry(e.key, e.value * operand))),
+      foreground.map((value) => value * operand).toList(),
+    );
   }
 
   static Drawing? lerp(Drawing? a, Drawing? b, double t) {
@@ -164,8 +204,9 @@ class Drawing {
       if (a == null) {
         return b * t;
       } else {
-        final keys = Set.from(a.elements.keys.followedBy(b.elements.keys));
-        final Map<Object, DrawingElement> elements = {};
+        final keys =
+            LinkedHashSet.from(a.elements.keys.followedBy(b.elements.keys));
+        final LinkedHashMap<Object, DrawingElement> elements = LinkedHashMap();
         for (var key in keys) {
           DrawingElement? element =
               DrawingElement.lerp(a.elements[key], b.elements[key], t);
@@ -173,7 +214,8 @@ class Drawing {
             elements[key] = element;
           }
         }
-        return Drawing._(elements);
+        // TODO: Interpolate background and foreground.
+        return Drawing._(b.background, elements, b.foreground);
       }
     }
   }

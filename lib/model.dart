@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:flutter/material.dart';
+
 import 'drawing.dart';
 import 'geometry.dart';
 import 'sprite.dart';
@@ -274,6 +276,13 @@ class Chunk {
   }
 
   void draw(Drawing drawing) {
+    // allPositions does not guarentee order.
+    for (var position in allPositions) {
+      final color =
+          isPassable(position) ? Colors.brown.shade300 : Colors.brown.shade600;
+      drawing.addBackground(DrawingElement.fill(position, color));
+    }
+
     for (var position in items.allPositions) {
       final item = items.get(position);
       if (item == null) {
@@ -288,6 +297,23 @@ class Chunk {
     for (var enemy in enemies) {
       if (isLit(enemy.location)) {
         enemy.draw(drawing);
+      }
+    }
+
+    for (var position in allPositions) {
+      final isRevealed = this.isRevealed(position);
+      if (!isRevealed) {
+        drawing.addForeground(DrawingElement.fill(position, Colors.black));
+      } else {
+        // Don't paint fog over walls to avoid changing their color.
+        final isWall = getCell(position).type == CellType.wall;
+        if (!isWall) {
+          final isLit = this.isLit(position);
+          if (!isLit) {
+            drawing
+                .addForeground(DrawingElement.fill(position, Colors.black38));
+          }
+        }
       }
     }
   }
