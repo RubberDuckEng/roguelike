@@ -68,6 +68,7 @@ class WorldPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    canvas.clipRect(Offset.zero & size);
     final window = controller.window;
     final cellSize = Size(
       size.width / window.width,
