@@ -108,12 +108,6 @@ class Chunk {
     }
   }
 
-  void update(GameState state) {
-    for (var enemy in enemies) {
-      enemy.update(state);
-    }
-  }
-
   void addWall(Random random) {
     final position = _getRandomGridPositionWithCondition(
         size, random, (position) => _getCellLocal(position).isPassable);
@@ -165,6 +159,8 @@ class Chunk {
 
   Rect get bounds => toGlobal(GridPosition.zero).toOffset() & size.toSize();
 
+  bool contains(Position position) => ChunkId.fromPosition(position) == chunkId;
+
   Cell _getCellLocal(GridPosition position) => cells.get(position)!;
   Cell getCell(Position position) => _getCellLocal(toLocal(position));
 
@@ -188,9 +184,7 @@ class Chunk {
     return buffer.toString();
   }
 
-  bool _isRevealedLocal(GridPosition position) => mapped.get(position) ?? false;
   bool isRevealed(Position position) => mapped.get(toLocal(position)) ?? false;
-  bool _isLitLocal(GridPosition position) => lit.get(position) ?? false;
   bool isLit(Position position) => lit.get(toLocal(position)) ?? false;
 
   Item? itemAt(Position position) {

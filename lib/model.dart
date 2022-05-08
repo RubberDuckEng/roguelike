@@ -3,7 +3,6 @@ import 'dart:math';
 import 'characters.dart';
 import 'drawing.dart';
 import 'geometry.dart';
-import 'grid.dart';
 import 'world.dart';
 
 class LogicalEvent {
@@ -85,6 +84,21 @@ class GameState {
     return world.enemyAt(position);
   }
 
+  void didMoveCharacter(Character character, Position oldLocation) {
+    // Enemies are stored per-chunk, which means we need to migrate them if they
+    // move across chunk boundaries.
+    if (character is! Enemy) {
+      return;
+    }
+    final oldChunk = getChunk(oldLocation);
+    final newChunk = getChunk(character.location);
+    if (oldChunk == newChunk) {
+      return;
+    }
+    oldChunk.enemies.remove(character);
+    newChunk.enemies.add(character);
+  }
+
   void revealAround(Position position, double radius) {
     var gridRadius = radius.ceil();
     for (var position
@@ -115,13 +129,13 @@ class GameState {
   }
 
   void nextTurn() {
-    for (var chunk in activeChunks) {
-      chunk.update(this);
+    final enemies = activeChunks.fold<List<Enemy>>(
+        <Enemy>[], (enemies, chunk) => enemies..addAll(chunk.enemies));
+    for (var enemy in enemies) {
+      enemy.update(this);
     }
     var item = world.pickupItem(player.location);
-    if (item != null) {
-      item.onPickup(this);
-    }
+    item?.onPickup(this);
     updateVisibility();
   }
 }

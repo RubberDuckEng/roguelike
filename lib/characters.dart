@@ -171,8 +171,10 @@ class MoveAction extends GameAction {
 
   @override
   void execute(GameState state) {
+    final oldLocation = character.location;
     character.location = destination;
     character.lastMoveDirection = direction;
+    state.didMoveCharacter(character, oldLocation);
   }
 }
 
