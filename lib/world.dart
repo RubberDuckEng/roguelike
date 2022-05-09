@@ -1,7 +1,6 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:roguelike/model.dart';
 
 import 'characters.dart';
 import 'drawing.dart';

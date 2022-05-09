@@ -51,7 +51,7 @@ class GameState {
 
   GameAction? actionFor(Player player, LogicalEvent logical) {
     if (logical.interact) {
-      var direction = player.lastMoveDirection;
+      var direction = player.facingDirection;
       final target = player.location + direction.delta;
       if (InteractAction.canInteractWith(this, player, target)) {
         return InteractAction(target: target, character: player);
@@ -65,16 +65,18 @@ class GameState {
     final target = player.location + direction.delta;
     final enemy = world.enemyAt(target);
     if (enemy != null) {
-      return AttackAction(target: target, character: player);
-    }
-    if (world.isPassable(target)) {
-      return MoveAction(
-        destination: player.location + direction.delta,
-        direction: direction,
+      return AttackAction(
+        attacker: player,
+        target: target,
         character: player,
+        direction: direction,
       );
     }
-    return null;
+    return MoveAction(
+      destination: player.location + direction.delta,
+      direction: direction,
+      character: player,
+    );
   }
 
   Character? characterAt(Position position) {

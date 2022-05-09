@@ -32,6 +32,14 @@ class Delta {
   double get magnitude => sqrt(dx * dx + dy * dy);
   int get manhattanDistance => dx.abs() + dy.abs();
 
+  Direction get primaryDirection {
+    var mostlyVertical = dy.abs() >= dx.abs();
+    if (mostlyVertical) {
+      return (dy >= 0) ? Direction.up : Direction.down;
+    }
+    return (dx >= 0) ? Direction.right : Direction.left;
+  }
+
   @override
   bool operator ==(other) {
     if (other is! Delta) {

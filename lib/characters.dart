@@ -12,7 +12,6 @@ import 'world.dart';
 abstract class Character extends Mob {
   int maxHealth;
   int currentHealth;
-  Direction lastMoveDirection = Direction.up;
 
   Character({
     required super.location,
@@ -58,7 +57,7 @@ class Player extends Character {
     }
 
     return TransformDrawable.rst(
-      rotation: lastMoveDirection.rotation,
+      rotation: facingDirection.rotation,
       drawable: avatar,
     );
   }
@@ -180,7 +179,12 @@ class Wanderer extends Brain {
     final distanceToPlayer = deltaToPlayer.manhattanDistance;
     final descriptor = enemy.descriptor;
     if (distanceToPlayer <= descriptor.attackRange) {
-      yield AttackAction(target: state.player.location, character: enemy);
+      yield AttackAction(
+        attacker: enemy,
+        target: state.player.location,
+        character: enemy,
+        direction: deltaToPlayer.primaryDirection,
+      );
     }
 
     final directions = [];
@@ -255,25 +259,32 @@ class MoveAction extends GameAction {
 
   @override
   void execute(GameState state) {
-    final oldLocation = character.location;
-    character.location = destination;
-    character.lastMoveDirection = direction;
-    state.didMoveCharacter(character, oldLocation);
+    character.facingDirection = direction;
+    if (state.getChunk(destination).isPassable(destination)) {
+      final oldLocation = character.location;
+      character.location = destination;
+      state.didMoveCharacter(character, oldLocation);
+    }
   }
 }
 
 class AttackAction extends GameAction {
+  final Mob attacker;
+  final Direction direction;
   final Position target;
   final int amount;
 
   const AttackAction({
+    required this.attacker,
     required this.target,
     required super.character,
+    required this.direction,
     this.amount = 1,
   });
 
   @override
   void execute(GameState state) {
+    attacker.facingDirection = direction;
     state.characterAt(target)?.hit(state, amount);
   }
 }
@@ -295,7 +306,7 @@ class InteractAction extends GameAction {
   @override
   void execute(GameState state) {
     final player = state.player;
-    final direction = player.lastMoveDirection;
+    final direction = player.facingDirection;
     final target = player.location + direction.delta;
     final cell = state.world.getCell(target);
     if (player.carryingBlock) {

@@ -5,6 +5,7 @@ import 'sprite.dart';
 
 abstract class Mob {
   Position location;
+  Direction facingDirection = Direction.up;
 
   Mob({required this.location});
 
