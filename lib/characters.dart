@@ -180,7 +180,6 @@ class Wanderer extends Brain {
     final descriptor = enemy.descriptor;
     if (distanceToPlayer <= descriptor.attackRange) {
       yield AttackAction(
-        attacker: enemy,
         target: state.player.location,
         character: enemy,
         direction: deltaToPlayer.primaryDirection,
@@ -260,7 +259,7 @@ class MoveAction extends GameAction {
   @override
   void execute(GameState state) {
     character.facingDirection = direction;
-    if (state.getChunk(destination).isPassable(destination)) {
+    if (state.world.isPassable(destination)) {
       final oldLocation = character.location;
       character.location = destination;
       state.didMoveCharacter(character, oldLocation);
@@ -269,13 +268,11 @@ class MoveAction extends GameAction {
 }
 
 class AttackAction extends GameAction {
-  final Mob attacker;
   final Direction direction;
   final Position target;
   final int amount;
 
   const AttackAction({
-    required this.attacker,
     required this.target,
     required super.character,
     required this.direction,
@@ -284,7 +281,7 @@ class AttackAction extends GameAction {
 
   @override
   void execute(GameState state) {
-    attacker.facingDirection = direction;
+    character.facingDirection = direction;
     state.characterAt(target)?.hit(state, amount);
   }
 }

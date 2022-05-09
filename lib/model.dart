@@ -66,7 +66,6 @@ class GameState {
     final enemy = world.enemyAt(target);
     if (enemy != null) {
       return AttackAction(
-        attacker: player,
         target: target,
         character: player,
         direction: direction,
