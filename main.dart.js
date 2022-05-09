@@ -14496,11 +14496,9 @@ ep:function ep(){},
 q6:function q6(a,b,c){this.b=a
 this.c=b
 this.a=c},
-lj:function lj(a,b,c,d){var _=this
-_.b=a
-_.c=b
-_.d=c
-_.a=d},
+lj:function lj(a,b,c){this.b=a
+this.c=b
+this.a=c},
 xv:function xv(a){this.a=a},
 iW(a,b,c,d,e){var s,r,q,p,o,n=Math.cos(d)*e,m=Math.sin(d)*e,l=new Float32Array(4)
 l[0]=n
@@ -45067,7 +45065,7 @@ q=c<=1?2:3
 break
 case 2:n=A.d(r.a,"player").a
 q=4
-return new A.lj(g,f.gRg(),n,g)
+return new A.lj(f.gRg(),n,g)
 case 4:case 3:m=[]
 if(c<=3){if(e<0)m.push(B.cf)
 if(e>0)m.push(B.ce)
@@ -45118,8 +45116,8 @@ p.a=s
 a.OQ(p,q)}}}
 A.lj.prototype={
 mS(a){var s
-this.b.b=this.c
-s=a.O3(this.d)
+this.a.b=this.b
+s=a.O3(this.c)
 if(s!=null)s.qw(a,-1)}}
 A.xv.prototype={
 mS(a){var s=A.d(a.a,"player"),r=s.b,q=s.a.M(0,r.c),p=a.b,o=p.aN(0,A.dc(q))
@@ -45390,7 +45388,7 @@ if(s==null)return null
 r=a.a
 q=s.c
 p=r.M(0,q)
-if(this.b.aN(0,A.dc(p)).mQ(p)!=null)return new A.lj(a,s,p,a)
+if(this.b.aN(0,A.dc(p)).mQ(p)!=null)return new A.lj(s,p,a)
 return new A.q6(s,a.a.M(0,q),a)},
 O3(a){if(A.d(this.a,"player").a.j(0,a))return A.d(this.a,"player")
 return this.b.aN(0,A.dc(a)).mQ(a)},
