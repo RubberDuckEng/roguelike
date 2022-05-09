@@ -71,3 +71,15 @@ class Torch extends Item {
   @override
   Drawable get drawable => const SpriteDrawable(Sprites.torch);
 }
+
+class MaxHealthUp extends Item {
+  MaxHealthUp({required super.location});
+
+  @override
+  void onPickup(GameState state) {
+    state.player.maxHealth += 1;
+  }
+
+  @override
+  Drawable get drawable => const SpriteDrawable(Sprites.emptyHeart);
+}

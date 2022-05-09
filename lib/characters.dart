@@ -104,7 +104,7 @@ class Enemies {
   static const EnemyDescriptor alien = EnemyDescriptor(
     name: 'Alien',
     brain: Wanderer.new,
-    maxHealth: 2,
+    maxHealth: 1,
     attackRange: 1,
     aggroRadius: 3,
     drops: [

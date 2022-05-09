@@ -63,4 +63,5 @@ class Sprites {
   // 0x1FA9C // ladder, not in most fonts yet.
   static const IconSprite previousLevel =
       IconSprite(IconData(0x1F300)); // cyclone
+  static const IconSprite emptyHeart = IconSprite(IconData(0x2661));
 }
