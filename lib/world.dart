@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:fast_noise/fast_noise.dart';
 
 import 'characters.dart';
 import 'drawing.dart';
@@ -17,9 +18,16 @@ enum CellType {
 
 class Cell {
   final CellType type;
+  final double value;
 
-  const Cell.empty() : type = CellType.empty;
-  const Cell.wall() : type = CellType.wall;
+  const Cell(this.type, this.value);
+
+  const Cell.empty()
+      : type = CellType.empty,
+        value = 0;
+  const Cell.wall()
+      : type = CellType.wall,
+        value = 0;
 
   bool get isPassable => type == CellType.empty;
   bool get isWall => type == CellType.wall;
@@ -61,12 +69,20 @@ class Chunk {
   final Grid<bool> mapped;
   final Grid<bool> lit;
 
-  Chunk(this.cells, this.chunkId, Random random)
+  Chunk(this.cells, this.chunkId, PerlinNoise noise)
       : mapped = Grid<bool>.filled(cells.size, (_) => false),
         lit = Grid<bool>.filled(cells.size, (_) => false) {
-    addManyWalls(10, random);
-    spawnEnemies(2, random);
-    spawnItems(random);
+    for (var position in allPositions) {
+      final value =
+          noise.getPerlin2(position.x.toDouble(), position.y.toDouble());
+      cells.set(toLocal(position),
+          value < 0.0 ? const Cell.wall() : const Cell.empty());
+      // cells.set(toLocal(position), Cell(CellType.empty, value));
+    }
+
+    // addManyWalls(10, random);
+    // spawnEnemies(2, random);
+    // spawnItems(random);
   }
 
   void draw(Drawing drawing) {
@@ -74,6 +90,12 @@ class Chunk {
     for (var position in allPositions) {
       final color =
           isPassable(position) ? Colors.brown.shade300 : Colors.brown.shade600;
+      // final cell = getCell(position);
+      // final color =
+      //     cell.value < 0.0 ? Colors.brown.shade300 : Colors.brown.shade600;
+      // // print("value: ${cell.value}");
+
+      //Color.fromARGB(255, 0, (255 * cell.value).round(), 0);
       drawing.addBackground(SolidDrawable(color), position);
     }
 
@@ -89,22 +111,22 @@ class Chunk {
       }
     }
 
-    for (var position in allPositions) {
-      final isRevealed = this.isRevealed(position);
-      if (!isRevealed) {
-        drawing.addForeground(const SolidDrawable(Colors.black), position);
-      } else {
-        // Don't paint fog over walls to avoid changing their color.
-        final isWall = getCell(position).type == CellType.wall;
-        if (!isWall) {
-          final isLit = this.isLit(position);
-          if (!isLit) {
-            drawing.addForeground(
-                const SolidDrawable(Colors.black38), position);
-          }
-        }
-      }
-    }
+    // for (var position in allPositions) {
+    //   final isRevealed = this.isRevealed(position);
+    //   if (!isRevealed) {
+    //     drawing.addForeground(const SolidDrawable(Colors.black), position);
+    //   } else {
+    //     // Don't paint fog over walls to avoid changing their color.
+    //     final isWall = getCell(position).type == CellType.wall;
+    //     if (!isWall) {
+    //       final isLit = this.isLit(position);
+    //       if (!isLit) {
+    //         drawing.addForeground(
+    //             const SolidDrawable(Colors.black38), position);
+    //       }
+    //     }
+    //   }
+    // }
   }
 
   void addWall(Random random) {
@@ -255,8 +277,15 @@ class ChunkId {
 class World {
   final int seed;
   final Map<ChunkId, Chunk> _map = {};
+  final PerlinNoise noise;
 
-  World({int? seed}) : seed = seed ?? 0;
+  World({int? seed})
+      : seed = seed ?? 0,
+        noise = PerlinNoise(
+          seed: seed ?? 1337,
+          gain: 1.0,
+          frequency: 0.1,
+        );
 
   Chunk get(ChunkId id) => _map.putIfAbsent(id, () => _generateChunk(id));
 
@@ -264,9 +293,9 @@ class World {
 
   Chunk _generateChunk(ChunkId chunkId) {
     // This Random is wrong, use noise or similar instead.
-    final random = Random(chunkId.hashCode ^ seed);
+    // final random = Random(chunkId.hashCode ^ seed);
     final cells = Grid.filled(kChunkSize, (_) => const Cell.empty());
-    return Chunk(cells, chunkId, random);
+    return Chunk(cells, chunkId, noise);
   }
 
   bool isPassable(Position position) => _chunkAt(position).isPassable(position);

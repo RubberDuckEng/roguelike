@@ -44,7 +44,7 @@ class Player extends Character {
 
   @override
   Drawable get drawable {
-    Drawable avatar = const SpriteDrawable(Sprites.ladyBug);
+    Drawable avatar = const SpriteDrawable(Sprites.ant);
 
     if (carryingBlock) {
       final block = TransformDrawable.rst(
