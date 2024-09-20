@@ -50,7 +50,7 @@ class Delta {
 
   @override
   int get hashCode {
-    return hashValues(dx, dy);
+    return Object.hash(dx, dy);
   }
 }
 
@@ -91,7 +91,7 @@ class Position {
 
   @override
   int get hashCode {
-    return hashValues(x, y);
+    return Object.hash(x, y);
   }
 }
 

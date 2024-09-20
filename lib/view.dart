@@ -1,6 +1,6 @@
-import 'package:flutter/services.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 
 import 'drawing.dart';
 import 'geometry.dart';
@@ -55,7 +55,7 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
-  LogicalEvent? _logicalEventFor(RawKeyDownEvent event) {
+  LogicalEvent? _logicalEventFor(KeyDownEvent event) {
     if (event.logicalKey == LogicalKeyboardKey.space) {
       return LogicalEvent.interact();
     }
@@ -95,7 +95,7 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void handleKeyEvent(RawKeyDownEvent event) {
+  void handleKeyEvent(KeyDownEvent event) {
     var logical = _logicalEventFor(event);
     if (logical == null) {
       return;
@@ -232,8 +232,8 @@ class MenuOverlay extends StatelessWidget {
     return Stack(
       children: [
         Container(decoration: const BoxDecoration(color: Colors.black26)),
-        Column(
-          children: const [
+        const Column(
+          children: [
             Text("DEAD"),
             Text("Press space to continue."),
           ],

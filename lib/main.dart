@@ -51,14 +51,14 @@ class _GamePageState extends State<GamePage>
       child: Center(
         child: AspectRatio(
           aspectRatio: 1.0,
-          child: RawKeyboardListener(
+          child: KeyboardListener(
             autofocus: true,
             focusNode: focusNode,
-            onKey: (event) {
-              if (event is RawKeyDownEvent) {
+            onKeyEvent: (event) {
+              if (event is KeyDownEvent) {
                 if (!controller.state.playerDead) {
                   controller.handleKeyEvent(event);
-                } else if (event.isKeyPressed(LogicalKeyboardKey.space)) {
+                } else if (event.logicalKey == LogicalKeyboardKey.space) {
                   controller.newGame();
                 }
               }
